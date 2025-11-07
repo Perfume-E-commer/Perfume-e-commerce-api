@@ -1,14 +1,15 @@
 package com.Perfume_e_commerce.Repositories;
 
-import com.Perfume_e_commerce.models.Products;
+import com.Perfume_e_commerce.models.Product;
+import org.bson.types.ObjectId;
 import org.springframework.data.mongodb.repository.MongoRepository;
 
 import java.util.List;
 
-public interface ProductRepository extends MongoRepository {
+public interface ProductRepository extends MongoRepository<Product, ObjectId> {
     // Find all active products
-    List<Products> findByIsActiveTrue();
+    List<Product> findByIsActiveTrue();
 
     // Find all active products by category (for filtering)
-    List<Products> findByCategoryAndIsActiveTrue(String category);
+    List<Product> findByCategoryAndIsActiveTrue(String category);
 }
