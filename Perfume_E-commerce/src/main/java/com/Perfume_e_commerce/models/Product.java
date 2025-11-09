@@ -1,13 +1,23 @@
 package com.Perfume_e_commerce.models;
 
 import jakarta.validation.constraints.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.bson.types.ObjectId;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.Indexed;
+import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.math.BigDecimal;
 import java.util.Date;
 
+@Document(collection = "Products")
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class Product {
     @Id
     private ObjectId id;

@@ -12,7 +12,7 @@ import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.util.Date;
 
-@Document(collation = "users")
+@Document(collection = "Users")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

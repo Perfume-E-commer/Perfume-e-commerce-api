@@ -41,35 +41,26 @@ public class SecurityConfig {
     @Autowired
     private UserDetailsServiceImpl userDetailsService;
 
-    @Bean
-    public AuthTokenFilter authenticationJwtTokenFilter(){
-        return new AuthTokenFilter();
-    }
+    @Autowired
+    private AuthTokenFilter authTokenFilter;
 
     @Bean
-    SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http) throws Exception {
-        http.csrf(AbstractHttpConfigurer::disable)
+    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+        http
+                .csrf(AbstractHttpConfigurer::disable)
                 .exceptionHandling(exception ->
                         exception.authenticationEntryPoint(unauthorizedHandler)
                 )
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
-                .authorizeHttpRequests((requests) -> requests
-                        // These are our public rules from the *other* filter bean
+                .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**").permitAll()
-                        .requestMatchers("/api/products/**").permitAll()
-                        // This was from your bean
-                        .requestMatchers("/api/signin").permitAll()
-                        .requestMatchers("/hello").permitAll() // Let's make /hello public for testing
                         .anyRequest().authenticated()
-                );
+                )
+                .authenticationProvider(authenticationProvider());
 
-        // Tell Spring to use our new AuthProvider
-        http.authenticationProvider(authenticationProvider()); // <-- ADD THIS
-
-        http.addFilterBefore(authenticationJwtTokenFilter(),
-                UsernamePasswordAuthenticationFilter.class);
+        http.addFilterBefore(authTokenFilter, UsernamePasswordAuthenticationFilter.class); // Good!
         return http.build();
     }
 
@@ -85,11 +76,4 @@ public class SecurityConfig {
     public PasswordEncoder passwordEncoder(){
         return new BCryptPasswordEncoder();
     }
-
-    @Bean
-    public AuthenticationManager authenticationManager(AuthenticationConfiguration builder) throws Exception{
-        return builder.getAuthenticationManager();
-    }
-
-
 }
