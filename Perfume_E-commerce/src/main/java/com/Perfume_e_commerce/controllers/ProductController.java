@@ -5,6 +5,7 @@ import com.Perfume_e_commerce.services.ProductService;
 import com.Perfume_e_commerce.models.Product;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -18,12 +19,9 @@ public class ProductController {
     @Autowired
     private ProductService productService;
 
-    @Autowired
-    private ProductRepository productRepository;
-
     @GetMapping
     public List<Product> getAllProducts() {
-        return productRepository.findByIsActiveTrue();
+        return productService.getAllActiveProducts();
     }
 
     @GetMapping("/{id}")
@@ -32,5 +30,11 @@ public class ProductController {
 
         return product.map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
+    }
+
+    @GetMapping("/admin-test")
+    @PreAuthorize("hasRole('ADMIN')")
+    public String adminTest() {
+        return "SUCCESS: You are an ADMIN!";
     }
 }

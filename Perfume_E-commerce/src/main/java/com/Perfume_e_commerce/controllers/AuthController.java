@@ -1,11 +1,11 @@
 package com.Perfume_e_commerce.controllers;
 
-import com.Perfume_e_commerce.Repositories.UserRepository;
 import com.Perfume_e_commerce.dto.AuthResponse;
 import com.Perfume_e_commerce.dto.LoginRequest;
 import com.Perfume_e_commerce.dto.RegisterRequest;
 import com.Perfume_e_commerce.models.User;
 import com.Perfume_e_commerce.security.JwtUtils;
+import com.Perfume_e_commerce.services.UserDetailsService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -32,14 +32,14 @@ public class AuthController {
     private AuthenticationManager authenticationManager;
 
     @Autowired
-    private UserRepository userRepository;
+    private UserDetailsService userService;
 
     @Autowired
     private PasswordEncoder passwordEncoder;
 
     @PostMapping("/register")
     public ResponseEntity<?> registerUser(@Valid @RequestBody RegisterRequest registerRequest) {
-        if (userRepository.existsByEmail(registerRequest.getEmail())) {
+        if (userService.emailExists(registerRequest.getEmail())) {
             return ResponseEntity.badRequest().body("Error: Email is already in use!");
         }
 
@@ -50,7 +50,7 @@ public class AuthController {
         user.setLastName(registerRequest.getLastName());
         user.setRole("USER"); // Default role
 
-        userRepository.save(user);
+        userService.saveUser(user);
         return ResponseEntity.ok("User registered successfully!");
     }
 
@@ -76,7 +76,6 @@ public class AuthController {
                 .map(item -> item.getAuthority().replace("ROLE_", "")) // Clean up "ROLE_"
                 .collect(Collectors.toList());
 
-        // Use our new AuthResponse DTO
         return ResponseEntity.ok(new AuthResponse(jwtToken, userDetails.getUsername(), roles.get(0)));
     }
 }
