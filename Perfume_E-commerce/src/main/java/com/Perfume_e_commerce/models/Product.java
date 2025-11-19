@@ -11,6 +11,8 @@ import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.Date;
 
 @Document(collection = "products")
@@ -50,10 +52,11 @@ public class Product {
     // ... we can add scentNotes later ...
 
     @Indexed
-    private boolean isActive = true; // So admins can hide products
+    private boolean isActive = true;
 
     @Indexed
     private boolean isFeatured = false; // For the landing page
 
-    private Date createdAt = new Date();
+    private LocalDateTime createdAt = LocalDateTime.now();
+
 }
