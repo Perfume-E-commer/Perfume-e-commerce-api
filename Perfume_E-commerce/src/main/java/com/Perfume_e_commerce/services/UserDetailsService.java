@@ -32,6 +32,17 @@ public class UserDetailsService implements org.springframework.security.core.use
         return userRepository.findByEmail(email);
     }
 
+    public User findByEmailOrThrow(String email) {
+        return userRepository.findByEmail(email)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found with email: " + email));
+    }
+
+    public User updateVerificationStatus(String email, boolean verified) {
+        User user = findByEmailOrThrow(email);
+        user.setVerified(verified);
+        return userRepository.save(user);
+    }
+
     @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException{
         User user = userRepository.findByEmail(email).orElseThrow(
@@ -41,6 +52,10 @@ public class UserDetailsService implements org.springframework.security.core.use
         return new org.springframework.security.core.userdetails.User(
                 user.getEmail(),
                 user.getPasswordHash(),
+                user.isVerified(),
+                true,
+                true,
+                true,
                 getAuthorities(user.getRole())
         );
     }
