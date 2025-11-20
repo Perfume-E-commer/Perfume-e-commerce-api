@@ -5,11 +5,12 @@ import org.bson.types.ObjectId;
 import org.springframework.data.mongodb.repository.MongoRepository;
 
 import java.io.ObjectInput;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
 public interface UserRepository extends MongoRepository<User, ObjectId> {
     Optional<User> findByEmail(String email);
     Boolean existsByEmail(String email);
-
+    List<User> findByRole(String role);
 }

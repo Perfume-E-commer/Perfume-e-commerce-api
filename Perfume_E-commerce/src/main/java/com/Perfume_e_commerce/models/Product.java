@@ -51,6 +51,8 @@ public class Product {
 
     // ... we can add scentNotes later ...
 
+    private int minStockLevel = 5;
+
     @Indexed
     private boolean isActive = true;
 
