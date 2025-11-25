@@ -10,7 +10,11 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
 @Document(collection = "users")
 @Data
@@ -36,10 +40,24 @@ public class User {
 
     private boolean isVerified = false;
 
+    private String phoneNumber;
+
+    private LocalDate dateOfBirth;
+
+    private String imageUrl;
+
     @NotBlank(message = "First name is required")
     private String firstName;
 
     @NotBlank(message = "Last name is required")
     private String lastName;
-    private Date createAt = new Date();
+
+    @Builder.Default
+    private LocalDateTime createdAt = LocalDateTime.now();
+
+    @Builder.Default
+    private List<Address> addresses = new ArrayList<>();
+
+    @Builder.Default
+    private List<CreditCard> creditCards = new ArrayList<>();
 }
