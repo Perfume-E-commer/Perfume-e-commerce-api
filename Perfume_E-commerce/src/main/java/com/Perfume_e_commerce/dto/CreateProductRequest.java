@@ -15,9 +15,16 @@ public class CreateProductRequest {
 
     private String description;
 
+    private String scent;
+    private String occasion;
+    private String gender;
+    private String summary;
+
     @NotNull(message = "Price is required")
     @DecimalMin(value = "0.01", message = "Price must be positive")
     private BigDecimal price;
+
+    private BigDecimal discountedPrice;
 
     @Min(value = 0, message = "Stock cannot be negative")
     private int stock;
@@ -27,4 +34,7 @@ public class CreateProductRequest {
     private String category;
 
     private String imageUrl;
+    private Boolean taxIncluded;
+    private Boolean isOnSale;
+    private Boolean isFeatured;
 }

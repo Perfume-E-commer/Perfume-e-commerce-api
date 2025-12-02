@@ -2,10 +2,14 @@ package com.Perfume_e_commerce.controllers;
 
 import com.Perfume_e_commerce.Repositories.ProductRepository;
 import com.Perfume_e_commerce.dto.CreateProductRequest;
+import com.Perfume_e_commerce.dto.ProductDTO;
+import com.Perfume_e_commerce.dto.ProductFilterDTO;
 import com.Perfume_e_commerce.services.ProductService;
 import com.Perfume_e_commerce.models.Product;
+import org.springframework.data.domain.Page;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -43,7 +47,7 @@ public class ProductController {
 
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<?> createProduct(@Valid @RequestBody CreateProductRequest request){
+    public ResponseEntity<?> createProduct(@Valid @RequestBody CreateProductRequest request) {
 
         Product product = new Product();
         product.setName(request.getName());
@@ -53,6 +57,16 @@ public class ProductController {
         product.setStock(request.getStock());
         product.setCategory(request.getCategory());
         product.setImageUrl(request.getImageUrl());
+
+        /// I Included new fields
+        product.setScent(request.getScent());
+        product.setOccasion(request.getOccasion());
+        product.setGender(request.getGender());
+        product.setSummary(request.getSummary());
+        product.setDiscountedPrice(request.getDiscountedPrice());
+        product.setTaxIncluded(request.getTaxIncluded());
+        product.setIsOnSale(request.getIsOnSale());
+        product.setIsFeatured(request.getIsFeatured());
 
         Product saveProduct = productService.saveProduct(product);
 
@@ -85,7 +99,7 @@ public class ProductController {
 
     @PatchMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<?> updateProduct(@PathVariable String id, @RequestBody Map<String, Object> updates) {
+    public ResponseEntity<?> patchProduct(@PathVariable String id, @RequestBody Map<String, Object> updates) {
         Product updatedProduct = productService.patchProduct(id, updates);
         return ResponseEntity.ok(updatedProduct);
     }
