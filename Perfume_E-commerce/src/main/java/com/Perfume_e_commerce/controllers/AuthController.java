@@ -63,7 +63,7 @@ public class AuthController {
         user.setPasswordHash(passwordEncoder.encode(registerRequest.getPassword()));
         user.setFirstName(registerRequest.getFirstName());
         user.setLastName(registerRequest.getLastName());
-        user.setRole("USER"); // Default role
+        user.setRole("USER"); 
         user.setVerified(false);
 
         userService.saveUser(user);

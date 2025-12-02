@@ -33,10 +33,11 @@ public class JwtUtils {
         String bearerToken = request.getHeader("Authorization");
         logger.debug("Authorization Header: {}", bearerToken);
         if (bearerToken != null && bearerToken.startsWith("Bearer ")) {
-            return bearerToken.substring(7); // remove bearer <>
+            return bearerToken.substring(7);
         }
         return null;
     }
+
     public String generateTokenFromUsername(UserDetails userDetails){
         String username = userDetails.getUsername();
         return Jwts.builder()
@@ -73,6 +74,5 @@ public class JwtUtils {
             logger.error("JWT claims string is empty: {}", e.getMessage());
         }
         return false;
-
     }
 }
