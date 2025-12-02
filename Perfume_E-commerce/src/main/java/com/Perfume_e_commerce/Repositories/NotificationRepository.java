@@ -1,6 +1,6 @@
 package com.Perfume_e_commerce.Repositories;
 
-import com.Perfume_e_commerce.models.Notification;
+import com.Perfume_e_commerce.models.marketing.Notification;
 import org.springframework.data.mongodb.repository.MongoRepository;
 
 import java.util.List;

@@ -1,5 +1,6 @@
-package com.Perfume_e_commerce.models;
+package com.Perfume_e_commerce.models.order;
 
+import com.Perfume_e_commerce.models.user.Address;
 import lombok.Data;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;

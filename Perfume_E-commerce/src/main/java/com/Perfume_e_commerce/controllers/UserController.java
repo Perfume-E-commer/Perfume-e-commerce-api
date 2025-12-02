@@ -2,9 +2,9 @@ package com.Perfume_e_commerce.controllers;
 
 import com.Perfume_e_commerce.Repositories.UserRepository;
 import com.Perfume_e_commerce.dto.request.UpdateProfileRequest;
-import com.Perfume_e_commerce.models.Address;
-import com.Perfume_e_commerce.models.CreditCard;
-import com.Perfume_e_commerce.models.User;
+import com.Perfume_e_commerce.models.user.Address;
+import com.Perfume_e_commerce.models.user.CreditCard;
+import com.Perfume_e_commerce.models.user.User;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;

@@ -1,6 +1,6 @@
 package com.Perfume_e_commerce.dto.request;
 
-import com.Perfume_e_commerce.models.CreditCard;
+import com.Perfume_e_commerce.models.user.CreditCard;
 import lombok.Data;
 
 import java.time.LocalDate;

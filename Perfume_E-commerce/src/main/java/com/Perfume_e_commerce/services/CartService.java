@@ -2,9 +2,9 @@ package com.Perfume_e_commerce.services;
 
 import com.Perfume_e_commerce.Repositories.CartRepository;
 import com.Perfume_e_commerce.Repositories.ProductRepository;
-import com.Perfume_e_commerce.models.Cart;
-import com.Perfume_e_commerce.models.CartItem;
-import com.Perfume_e_commerce.models.Product;
+import com.Perfume_e_commerce.models.order.Cart;
+import com.Perfume_e_commerce.models.order.CartItem;
+import com.Perfume_e_commerce.models.product.Product;
 import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;

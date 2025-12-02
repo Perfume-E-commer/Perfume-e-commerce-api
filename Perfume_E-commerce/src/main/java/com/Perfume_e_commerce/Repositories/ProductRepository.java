@@ -1,6 +1,6 @@
 package com.Perfume_e_commerce.Repositories;
 
-import com.Perfume_e_commerce.models.Product;
+import com.Perfume_e_commerce.models.product.Product;
 import org.bson.types.ObjectId;
 import org.springframework.data.mongodb.repository.MongoRepository;
 

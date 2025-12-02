@@ -1,6 +1,6 @@
 package com.Perfume_e_commerce.Repositories;
 
-import com.Perfume_e_commerce.models.VerificationCode;
+import com.Perfume_e_commerce.models.user.VerificationCode;
 import org.springframework.data.mongodb.repository.MongoRepository;
 
 import java.util.Optional;

@@ -1,10 +1,8 @@
-package com.Perfume_e_commerce.models;
+package com.Perfume_e_commerce.models.order;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.mapping.Document;
 
 @Data
 @AllArgsConstructor

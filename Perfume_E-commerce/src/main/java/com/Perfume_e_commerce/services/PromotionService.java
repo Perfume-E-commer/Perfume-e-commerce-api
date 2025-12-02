@@ -1,7 +1,7 @@
 package com.Perfume_e_commerce.services;
 
 import com.Perfume_e_commerce.Repositories.PromotionRepository;
-import com.Perfume_e_commerce.models.Promotion;
+import com.Perfume_e_commerce.models.marketing.Promotion;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 

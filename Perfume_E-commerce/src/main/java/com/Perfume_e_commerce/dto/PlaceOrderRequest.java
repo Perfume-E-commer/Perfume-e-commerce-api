@@ -1,6 +1,6 @@
 package com.Perfume_e_commerce.dto;
 
-import com.Perfume_e_commerce.models.Address;
+import com.Perfume_e_commerce.models.user.Address;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;

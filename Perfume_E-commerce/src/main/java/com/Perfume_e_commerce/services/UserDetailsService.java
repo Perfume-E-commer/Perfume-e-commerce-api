@@ -1,7 +1,7 @@
 package com.Perfume_e_commerce.services;
 
 import com.Perfume_e_commerce.Repositories.UserRepository;
-import com.Perfume_e_commerce.models.User;
+import com.Perfume_e_commerce.models.user.User;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;

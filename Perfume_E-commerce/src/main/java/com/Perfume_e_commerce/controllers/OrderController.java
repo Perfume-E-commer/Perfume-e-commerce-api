@@ -2,7 +2,7 @@ package com.Perfume_e_commerce.controllers;
 
 import com.Perfume_e_commerce.Repositories.UserRepository;
 import com.Perfume_e_commerce.dto.PlaceOrderRequest;
-import com.Perfume_e_commerce.models.Order;
+import com.Perfume_e_commerce.models.order.Order;
 import com.Perfume_e_commerce.services.OrderService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;

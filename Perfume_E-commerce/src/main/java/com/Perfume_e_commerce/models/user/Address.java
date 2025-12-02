@@ -1,4 +1,4 @@
-package com.Perfume_e_commerce.models;
+package com.Perfume_e_commerce.models.user;
 
 import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;

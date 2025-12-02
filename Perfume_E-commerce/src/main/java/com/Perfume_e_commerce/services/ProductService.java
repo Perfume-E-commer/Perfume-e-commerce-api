@@ -1,7 +1,7 @@
 package com.Perfume_e_commerce.services;
 
 import com.Perfume_e_commerce.Repositories.ProductRepository;
-import com.Perfume_e_commerce.models.Product;
+import com.Perfume_e_commerce.models.product.Product;
 import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -76,7 +76,6 @@ public class ProductService {
                                 product.setDescription((String) value);
                                 break;
                             case "price":
-                                // JSON numbers often come as Integer/Double, so we convert safely
                                 product.setPrice(new java.math.BigDecimal(String.valueOf(value)));
                                 break;
                             case "stock":
@@ -91,7 +90,7 @@ public class ProductService {
                             case "isActive":
                                 product.setActive((Boolean) value);
                                 break;
-                            // We ignore 'id' or 'createdAt' to prevent hacking
+
                         }
                     });
                     return productRepository.save(product);

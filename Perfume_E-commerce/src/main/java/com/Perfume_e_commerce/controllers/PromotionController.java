@@ -1,6 +1,6 @@
 package com.Perfume_e_commerce.controllers;
 
-import com.Perfume_e_commerce.models.Promotion;
+import com.Perfume_e_commerce.models.marketing.Promotion;
 import com.Perfume_e_commerce.services.PromotionService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;

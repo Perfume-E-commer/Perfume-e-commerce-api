@@ -1,4 +1,4 @@
-package com.Perfume_e_commerce.models;
+package com.Perfume_e_commerce.models.user;
 
 import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;
@@ -13,7 +13,6 @@ import org.springframework.data.mongodb.core.mapping.Document;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 
 @Document(collection = "users")

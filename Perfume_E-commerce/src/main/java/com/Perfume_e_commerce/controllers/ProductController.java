@@ -1,9 +1,8 @@
 package com.Perfume_e_commerce.controllers;
 
-import com.Perfume_e_commerce.Repositories.ProductRepository;
-import com.Perfume_e_commerce.dto.CreateProductRequest;
+import com.Perfume_e_commerce.dto.request.CreateProductRequest;
 import com.Perfume_e_commerce.services.ProductService;
-import com.Perfume_e_commerce.models.Product;
+import com.Perfume_e_commerce.models.product.Product;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -53,6 +52,10 @@ public class ProductController {
         product.setStock(request.getStock());
         product.setCategory(request.getCategory());
         product.setImageUrl(request.getImageUrl());
+        product.setVariants(request.getVariants());
+        product.setProductStory(request.getProductStory());
+        product.setFeatures(request.getFeatures());
+        product.setScentNotes(request.getScentNotes());
 
         Product saveProduct = productService.saveProduct(product);
 

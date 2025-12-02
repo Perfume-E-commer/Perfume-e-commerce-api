@@ -1,4 +1,4 @@
-package com.Perfume_e_commerce.models;
+package com.Perfume_e_commerce.models.order;
 
 import lombok.Data;
 import org.springframework.data.annotation.Id;

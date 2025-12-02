@@ -1,4 +1,4 @@
-package com.Perfume_e_commerce.models;
+package com.Perfume_e_commerce.models.product;
 
 import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;
@@ -11,9 +11,9 @@ import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.Date;
+import java.util.ArrayList;
+import java.util.List;
 
 @Document(collection = "products")
 @Data
@@ -49,7 +49,13 @@ public class Product {
 
     private String imageUrl;
 
-    // ... we can add scentNotes later ...
+    private List<ProductVariant> variants = new ArrayList<>();
+
+    private ProductStory productStory;
+
+    private List<ProductFeature> features = new ArrayList<>();
+
+    private List<ScentNote> scentNotes = new ArrayList<>();
 
     private int minStockLevel = 5;
 

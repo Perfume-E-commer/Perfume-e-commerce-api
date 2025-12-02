@@ -2,7 +2,7 @@ package com.Perfume_e_commerce.controllers;
 
 import com.Perfume_e_commerce.Repositories.UserRepository;
 import com.Perfume_e_commerce.dto.AddToCartRequest;
-import com.Perfume_e_commerce.models.Cart;
+import com.Perfume_e_commerce.models.order.Cart;
 import com.Perfume_e_commerce.services.CartService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
