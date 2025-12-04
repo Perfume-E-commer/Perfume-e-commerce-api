@@ -1,7 +1,10 @@
 package com.Perfume_e_commerce.services;
 
 import com.Perfume_e_commerce.Repositories.ProductRepository;
+import com.Perfume_e_commerce.Repositories.UserRepository;
 import com.Perfume_e_commerce.models.product.Product;
+import com.Perfume_e_commerce.models.product.Rating;
+import com.Perfume_e_commerce.models.user.User;
 import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -11,6 +14,9 @@ import java.util.Optional;
 
 @Service
 public class ProductService {
+    @Autowired
+    private UserRepository userRepository;
+
     @Autowired
     private ProductRepository productRepository;
 
@@ -96,6 +102,33 @@ public class ProductService {
                     return productRepository.save(product);
                 })
                 .orElseThrow(() -> new RuntimeException("Product not found with id " + id));
+    }
+
+    public Product addRating(String productId, String userEmail, int stars, String comment) {
+        Product product = getProductById(productId)
+                .orElseThrow(() -> new RuntimeException("Product not found"));
+
+        User user = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        Rating newRating = new Rating();
+        newRating.setUserId(user.getId().toString());
+        newRating.setUserName(user.getFirstName() + " " + user.getLastName());
+        newRating.setStars(stars);
+        newRating.setComment(comment);
+
+        product.getRatings().add(newRating);
+
+        product.setTotalReviews(product.getRatings().size());
+
+        double average = product.getRatings().stream()
+                .mapToInt(Rating::getStars)
+                .average()
+                .orElse(0.0);
+
+        product.setAverageRating(Math.round(average * 10.0) / 10.0);
+
+        return productRepository.save(product);
     }
 
 }

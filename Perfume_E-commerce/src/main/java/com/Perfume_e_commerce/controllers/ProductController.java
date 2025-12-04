@@ -1,5 +1,6 @@
 package com.Perfume_e_commerce.controllers;
 
+import com.Perfume_e_commerce.dto.request.AddRatingRequest;
 import com.Perfume_e_commerce.dto.request.CreateProductRequest;
 import com.Perfume_e_commerce.services.ProductService;
 import com.Perfume_e_commerce.models.product.Product;
@@ -7,6 +8,7 @@ import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -93,4 +95,20 @@ public class ProductController {
         return ResponseEntity.ok(updatedProduct);
     }
 
+    @PostMapping("/{id}/ratings")
+    public ResponseEntity<?> addRating(@PathVariable String id, @Valid @RequestBody AddRatingRequest request) {
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+
+        try {
+            Product updatedProduct = productService.addRating(
+                    id,
+                    email,
+                    request.getStars(),
+                    request.getComment()
+            );
+            return ResponseEntity.ok(updatedProduct);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
 }
