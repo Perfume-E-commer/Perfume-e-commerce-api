@@ -13,6 +13,7 @@ import com.Perfume_e_commerce.models.order.OrderItem;
 import com.Perfume_e_commerce.models.product.Product;
 import com.Perfume_e_commerce.models.user.Address;
 import com.Perfume_e_commerce.models.user.User;
+import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -53,18 +54,15 @@ public class OrderService {
         double discountAmount = 0.0;
 
         if (promoCode != null && !promoCode.isEmpty()) {
-            // Validate (will throw exception if invalid/expired)
             Promotion promo = promotionService.validatePromotion(promoCode);
 
-            // Calculate discount
             discountAmount = totalAmount * (promo.getDiscountPercent() / 100.0);
             totalAmount = totalAmount - discountAmount;
         }
         
         List<OrderItem> orderItems = new ArrayList<>();
         for (CartItem cartItem : cart.getItems()) {
-            Product product = productRepository.findById(cartItem.getProductId()) // Find by String ID directly if ID is String
-                    // If your repo expects ObjectId, convert it: new ObjectId(cartItem.getProductId())
+            Product product = productRepository.findById(new ObjectId(cartItem.getProductId()))
                     .orElseThrow(() -> new RuntimeException("Product not found: " + cartItem.getProductId()));
 
             // Check Stock
