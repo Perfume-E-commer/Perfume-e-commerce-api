@@ -60,4 +60,10 @@ public class UserController {
             return ResponseEntity.ok(user);
         }).orElse(ResponseEntity.notFound().build());
     }
+
+    @GetMapping
+    public ResponseEntity<List<User>> getAllUsers() {
+        List<User> users = userRepository.findAll();
+        return ResponseEntity.ok(users);
+    }
 }

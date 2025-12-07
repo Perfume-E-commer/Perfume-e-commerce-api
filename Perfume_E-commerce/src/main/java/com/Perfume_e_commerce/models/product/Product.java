@@ -22,7 +22,7 @@ import java.util.List;
 @Builder
 public class Product {
     @Id
-    private ObjectId id;
+    private String id;
 
     @NotBlank(message = "Product name is required")
     @Size(max = 100, message = "Name too long")
