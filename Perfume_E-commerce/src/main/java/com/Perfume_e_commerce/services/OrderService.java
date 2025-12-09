@@ -1,9 +1,6 @@
 package com.Perfume_e_commerce.services;
 
-import com.Perfume_e_commerce.Repositories.NotificationRepository;
-import com.Perfume_e_commerce.Repositories.OrderRepository;
-import com.Perfume_e_commerce.Repositories.ProductRepository;
-import com.Perfume_e_commerce.Repositories.UserRepository;
+import com.Perfume_e_commerce.Repositories.*;
 import com.Perfume_e_commerce.models.marketing.Notification;
 import com.Perfume_e_commerce.models.marketing.Promotion;
 import com.Perfume_e_commerce.models.order.Cart;
@@ -13,6 +10,7 @@ import com.Perfume_e_commerce.models.order.OrderItem;
 import com.Perfume_e_commerce.models.product.Product;
 import com.Perfume_e_commerce.models.user.Address;
 import com.Perfume_e_commerce.models.user.User;
+import com.Perfume_e_commerce.models.inventory.InventoryLog; // Import the InventoryLog model
 import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -24,6 +22,9 @@ import java.util.UUID;
 
 @Service
 public class OrderService {
+    @Autowired
+    private InventoryLogRepository inventoryLogRepository;
+
     @Autowired
     private OrderRepository orderRepository;
 
@@ -44,7 +45,7 @@ public class OrderService {
 
     @Transactional
     public Order placeOrder(String userId, Address shippingAddress, String promoCode) {
-        
+
         Cart cart = cartService.getCartByUserId(userId);
         if (cart.getItems().isEmpty()) {
             throw new RuntimeException("Cart is empty. Cannot place order.");
@@ -59,7 +60,7 @@ public class OrderService {
             discountAmount = totalAmount * (promo.getDiscountPercent() / 100.0);
             totalAmount = totalAmount - discountAmount;
         }
-        
+
         List<OrderItem> orderItems = new ArrayList<>();
         for (CartItem cartItem : cart.getItems()) {
             Product product = productRepository.findById(new ObjectId(cartItem.getProductId()))
@@ -71,8 +72,20 @@ public class OrderService {
             }
 
             // Reduce Stock
-            product.setStock(product.getStock() - cartItem.getQuantity());
+            int oldStock = product.getStock();
+            int quantityToReduce = cartItem.getQuantity();
+            int newStock = oldStock - quantityToReduce;
+
+            product.setStock(newStock);
             productRepository.save(product);
+
+            InventoryLog log = new InventoryLog(
+                    product.getId(),
+                    "SALE",
+                    -quantityToReduce,
+                    newStock
+            );
+            inventoryLogRepository.save(log);
 
             if (product.getStock() <= product.getMinStockLevel()) {
                 createLowStockNotification(product);
@@ -83,22 +96,21 @@ public class OrderService {
                     cartItem.getProductId(),
                     product.getName(),
                     cartItem.getQuantity(),
-                    product.getPrice().doubleValue() // Lock in the price at purchase time
+                    product.getPrice().doubleValue()
             );
             orderItems.add(orderItem);
         }
 
-        // 3. Create the Order Record
         Order newOrder = new Order();
         newOrder.setUserId(userId);
         newOrder.setItems(orderItems);
         newOrder.setTotalAmount(cart.getTotalPrice());
         newOrder.setShippingAddress(shippingAddress);
         newOrder.setStatus("CONFIRMED");
-        newOrder.setPaymentStatus("PAID"); // Mocking successful payment
+        newOrder.setPaymentStatus("PAID");
         newOrder.setOrderNumber("ORD-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase());
 
-        newOrder.setTotalAmount(totalAmount);     // The discounted price
+        newOrder.setTotalAmount(totalAmount);
         newOrder.setDiscountAmount(discountAmount);
         newOrder.setPromoCodeUsed(promoCode);
 
@@ -110,7 +122,6 @@ public class OrderService {
     }
 
     private void createLowStockNotification(Product product) {
-        // Find all users with role "ADMIN"
         List<User> admins = userRepository.findByRole("ADMIN"); // You might need to add this method to UserRepository!
 
         for (User admin : admins) {
