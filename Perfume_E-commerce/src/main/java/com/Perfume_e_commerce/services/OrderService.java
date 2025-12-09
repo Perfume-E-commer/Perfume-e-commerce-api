@@ -1,6 +1,10 @@
 package com.Perfume_e_commerce.services;
 
-import com.Perfume_e_commerce.Repositories.*;
+import com.Perfume_e_commerce.Repositories.InventoryLogRepository;
+import com.Perfume_e_commerce.Repositories.NotificationRepository;
+import com.Perfume_e_commerce.Repositories.OrderRepository;
+import com.Perfume_e_commerce.Repositories.ProductRepository;
+import com.Perfume_e_commerce.Repositories.UserRepository;
 import com.Perfume_e_commerce.models.marketing.Notification;
 import com.Perfume_e_commerce.models.marketing.Promotion;
 import com.Perfume_e_commerce.models.order.Cart;
@@ -8,9 +12,10 @@ import com.Perfume_e_commerce.models.order.CartItem;
 import com.Perfume_e_commerce.models.order.Order;
 import com.Perfume_e_commerce.models.order.OrderItem;
 import com.Perfume_e_commerce.models.product.Product;
+import com.Perfume_e_commerce.models.product.ProductVariant;
+import com.Perfume_e_commerce.models.inventory.InventoryLog;
 import com.Perfume_e_commerce.models.user.Address;
 import com.Perfume_e_commerce.models.user.User;
-import com.Perfume_e_commerce.models.inventory.InventoryLog; // Import the InventoryLog model
 import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -66,37 +71,53 @@ public class OrderService {
             Product product = productRepository.findById(new ObjectId(cartItem.getProductId()))
                     .orElseThrow(() -> new RuntimeException("Product not found: " + cartItem.getProductId()));
 
-            // Check Stock
-            if (product.getStock() < cartItem.getQuantity()) {
-                throw new RuntimeException("Not enough stock for product: " + product.getName());
+            int quantityToReduce = cartItem.getQuantity();
+            int currentVariantStock = 0;
+            int currentVariantMinStock = product.getMinStockLevel();
+            boolean isVariant = cartItem.getSize() != null && !cartItem.getSize().isEmpty();
+
+            if (isVariant) {
+                ProductVariant variant = product.getVariantBySize(cartItem.getSize())
+                        .orElseThrow(() -> new RuntimeException("Variant not found: " + cartItem.getSize()));
+
+                if (variant.getStock() < quantityToReduce) {
+                    throw new RuntimeException("Not enough stock for variant: " + variant.getSize());
+                }
+
+                variant.setStock(variant.getStock() - quantityToReduce);
+                product.recalculateTotalStock();
+                currentVariantStock = variant.getStock();
+                currentVariantMinStock = variant.getMinStock();
+
+            } else {
+                if (product.getStock() < quantityToReduce) {
+                    throw new RuntimeException("Not enough stock for product: " + product.getName());
+                }
+                product.setStock(product.getStock() - quantityToReduce);
+                currentVariantStock = product.getStock();
             }
 
-            // Reduce Stock
-            int oldStock = product.getStock();
-            int quantityToReduce = cartItem.getQuantity();
-            int newStock = oldStock - quantityToReduce;
-
-            product.setStock(newStock);
             productRepository.save(product);
+
+            String logProductId = product.getId() + (isVariant ? " (" + cartItem.getSize() + ")" : "");
 
             InventoryLog log = new InventoryLog(
                     product.getId(),
-                    "SALE",
+                    "SALE" + (isVariant ? " - " + cartItem.getSize() : ""),
                     -quantityToReduce,
-                    newStock
+                    currentVariantStock
             );
             inventoryLogRepository.save(log);
 
-            if (product.getStock() <= product.getMinStockLevel()) {
-                createLowStockNotification(product);
+            if (currentVariantStock <= currentVariantMinStock) {
+                createLowStockNotification(product, isVariant ? cartItem.getSize() : null);
             }
 
-            // Add to Order List (Snapshotted price)
             OrderItem orderItem = new OrderItem(
                     cartItem.getProductId(),
-                    product.getName(),
+                    product.getName() + (isVariant ? " (" + cartItem.getSize() + ")" : ""),
                     cartItem.getQuantity(),
-                    product.getPrice().doubleValue()
+                    cartItem.getPrice()
             );
             orderItems.add(orderItem);
         }
@@ -121,13 +142,20 @@ public class OrderService {
         return savedOrder;
     }
 
-    private void createLowStockNotification(Product product) {
-        List<User> admins = userRepository.findByRole("ADMIN"); // You might need to add this method to UserRepository!
+    private void createLowStockNotification(Product product, String variantSize) {
+        List<User> admins = userRepository.findByRole("ADMIN");
 
         for (User admin : admins) {
-            String message = "⚠️ Low Stock Alert: " + product.getName() + " is down to " + product.getStock() + " units.";
+            String itemName = product.getName() + (variantSize != null ? " (" + variantSize + ")" : "");
+
+            int currentStock = (variantSize != null)
+                    ? product.getVariantBySize(variantSize).map(ProductVariant::getStock).orElse(0)
+                    : product.getStock();
+
+            String message = "⚠️ Low Stock Alert: " + itemName + " is down to " + currentStock + " units.";
+
             Notification notification = new Notification(
-                    admin.getId().toString(), // Assuming ID is ObjectId, convert to String
+                    admin.getId().toString(),
                     "STOCK_ALERT",
                     message
             );

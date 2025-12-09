@@ -19,7 +19,6 @@ public class CartService {
     @Autowired
     private ProductRepository productRepository;
 
-    // Get cart by User ID, or create a new one if null
     public Cart getCartByUserId(String userId) {
         return cartRepository.findByUserId(userId)
                 .orElseGet(() -> {
@@ -29,14 +28,27 @@ public class CartService {
                 });
     }
 
-    public Cart addToCart(String userId, String productId, int quantity) {
+    public Cart addToCart(String userId, String productId, int quantity, String size) {
         Cart cart = getCartByUserId(userId);
         Product product = productRepository.findById(new ObjectId(productId))
                 .orElseThrow(() -> new RuntimeException("Product not found"));
 
-        // Check if item exists
+        double finalPrice = product.getPrice().doubleValue();
+
+        if (size != null && !size.isEmpty() && product.getVariants() != null) {
+            // Find the specific variant
+            finalPrice = product.getVariants().stream()
+                    .filter(v -> v.getSize().equalsIgnoreCase(size))
+                    .findFirst()
+                    .map(v -> v.getPrice().doubleValue())
+                    .orElse(finalPrice);
+        }
+
+        // 3. Check if item (product + size) exists
+        // We must check BOTH productId AND size now!
         Optional<CartItem> existingItem = cart.getItems().stream()
-                .filter(item -> item.getProductId().equals(productId))
+                .filter(item -> item.getProductId().equals(productId)
+                        && (item.getSize() == null || item.getSize().equals(size)))
                 .findFirst();
 
         if (existingItem.isPresent()) {
@@ -46,7 +58,8 @@ public class CartService {
                     productId,
                     product.getName(),
                     quantity,
-                    product.getPrice().doubleValue()
+                    finalPrice,
+                    size
             );
             cart.getItems().add(newItem);
         }

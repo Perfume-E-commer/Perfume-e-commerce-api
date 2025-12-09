@@ -11,6 +11,7 @@ import java.time.LocalDateTime;
 @Document(collection = "inventory_logs")
 @Data
 @NoArgsConstructor
+@AllArgsConstructor
 public class InventoryLog {
     @Id
     private String id;
@@ -24,5 +25,6 @@ public class InventoryLog {
         this.changeType = changeType;
         this.quantityChange = quantityChange;
         this.newStockLevel = newStockLevel;
+        this.createdAt = LocalDateTime.now();
     }
 }

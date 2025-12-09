@@ -92,4 +92,20 @@ public class Product {
 
     @Builder.Default
     private LocalDateTime createdAt = LocalDateTime.now();
+
+
+    public void recalculateTotalStock() {
+        if (this.variants != null && !this.variants.isEmpty()) {
+            this.stock = this.variants.stream()
+                    .mapToInt(ProductVariant::getStock)
+                    .sum();
+        }
+    }
+
+    public java.util.Optional<ProductVariant> getVariantBySize(String size) {
+        if (this.variants == null) return java.util.Optional.empty();
+        return this.variants.stream()
+                .filter(v -> v.getSize().equalsIgnoreCase(size))
+                .findFirst();
+    }
 }
