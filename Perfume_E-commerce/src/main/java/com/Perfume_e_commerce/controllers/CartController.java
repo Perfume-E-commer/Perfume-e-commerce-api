@@ -45,7 +45,12 @@ public class CartController {
     @PostMapping("/add")
     public ResponseEntity<Cart> addToCart(@RequestBody AddToCartRequest request) {
         String userId = getCurrentUserId();
-        Cart updatedCart = cartService.addToCart(userId, request.getProductId(), request.getQuantity());
+        Cart updatedCart = cartService.addToCart(
+                userId,
+                request.getProductId(),
+                request.getQuantity(),
+                request.getSize()
+        );
         return ResponseEntity.ok(updatedCart);
     }
 
