@@ -59,4 +59,7 @@ public class User {
 
     @Builder.Default
     private List<CreditCard> creditCards = new ArrayList<>();
+
+    @Builder.Default
+    private List<String> viewedProductIds = new ArrayList<>();
 }
