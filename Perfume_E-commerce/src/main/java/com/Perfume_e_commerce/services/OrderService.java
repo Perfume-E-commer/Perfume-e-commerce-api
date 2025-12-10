@@ -163,6 +163,31 @@ public class OrderService {
         }
     }
 
+    public Order updateOrderStatus(String orderId, String newStatus) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new RuntimeException("Order not found"));
+
+        List<String> validStatuses = List.of("CONFIRMED", "SHIPPED", "DELIVERED", "CANCELLED");
+        if (!validStatuses.contains(newStatus)) {
+            throw new RuntimeException("Invalid status: " + newStatus);
+        }
+
+        order.setStatus(newStatus);
+        Order updatedOrder = orderRepository.save(order);
+
+        if ("SHIPPED".equals(newStatus)) {
+            String message = "Good news! Your order #" + order.getOrderNumber() + " has been shipped.";
+            Notification notification = new Notification(
+                    order.getUserId(),
+                    "ORDER_UPDATE",
+                    message
+            );
+            notificationRepository.save(notification);
+        }
+
+        return updatedOrder;
+    }
+
     public List<Order> getUserOrders(String userId) {
         return orderRepository.findByUserId(userId);
     }
