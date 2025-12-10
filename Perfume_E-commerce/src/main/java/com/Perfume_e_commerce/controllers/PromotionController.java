@@ -39,4 +39,23 @@ public class PromotionController {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
+
+    @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Promotion> updatePromotion(@PathVariable String id, @RequestBody Promotion promotion) {
+        return ResponseEntity.ok(promotionService.updatePromotion(id, promotion));
+    }
+
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> deletePromotion(@PathVariable String id) {
+        promotionService.deletePromotion(id);
+        return ResponseEntity.ok("Promotion deleted successfully");
+    }
+
+    @PatchMapping("/{id}/toggle")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Promotion> togglePromotion(@PathVariable String id) {
+        return ResponseEntity.ok(promotionService.toggleActiveStatus(id));
+    }
 }

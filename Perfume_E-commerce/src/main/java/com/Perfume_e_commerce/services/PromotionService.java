@@ -14,20 +14,16 @@ public class PromotionService {
     @Autowired
     private PromotionRepository promotionRepository;
 
-
-    // Admin: Create a new promotion
     public Promotion createPromotion(Promotion promotion) {
         // Ensure code is uppercase
         promotion.setCode(promotion.getCode().toUpperCase());
         return promotionRepository.save(promotion);
     }
 
-    // Admin: Get all
     public List<Promotion> getAllPromotions() {
         return promotionRepository.findAll();
     }
 
-    // User: Validate code
     public Promotion validatePromotion(String code) {
         Optional<Promotion> promoOpt = promotionRepository.findByCode(code.toUpperCase());
 
@@ -46,5 +42,42 @@ public class PromotionService {
         }
 
         return promo;
+    }
+
+    public Promotion updatePromotion(String id, Promotion updatedDetails) {
+        return promotionRepository.findById(id)
+                .map(promo -> {
+                    // Update fields (Allow updating Code? Maybe, but be careful)
+                    if (updatedDetails.getCode() != null) {
+                        promo.setCode(updatedDetails.getCode().toUpperCase());
+                    }
+                    if (updatedDetails.getDescription() != null) {
+                        promo.setDescription(updatedDetails.getDescription());
+                    }
+                    if (updatedDetails.getDiscountPercent() > 0) {
+                        promo.setDiscountPercent(updatedDetails.getDiscountPercent());
+                    }
+                    if (updatedDetails.getValidUntil() != null) {
+                        promo.setValidUntil(updatedDetails.getValidUntil());
+                    }
+                    // isActive is handled separately or here if you prefer
+                    return promotionRepository.save(promo);
+                })
+                .orElseThrow(() -> new RuntimeException("Promotion not found"));
+    }
+
+    public void deletePromotion(String id) {
+//        promotionRepository.deleteById(id);
+
+        Promotion promo = promotionRepository.findById(id).orElseThrow();
+        promo.setActive(false);
+        promotionRepository.save(promo);
+    }
+
+    public Promotion toggleActiveStatus(String id) {
+        Promotion promo = promotionRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Promotion not found"));
+        promo.setActive(!promo.isActive());
+        return promotionRepository.save(promo);
     }
 }
