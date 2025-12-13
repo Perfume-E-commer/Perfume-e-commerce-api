@@ -31,4 +31,13 @@ public class AdminOrderController {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
+
+    @PutMapping("/orders/{id}/status")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Order> updateOrderStatus(
+            @PathVariable String id,
+            @RequestParam String status) {
+
+        return ResponseEntity.ok(orderService.updateOrderStatus(id, status));
+    }
 }

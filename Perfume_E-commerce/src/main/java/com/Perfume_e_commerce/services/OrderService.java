@@ -21,6 +21,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -47,6 +48,9 @@ public class OrderService {
 
     @Autowired
     private PromotionService promotionService;
+
+    @Autowired
+    private NotificationService notificationService;
 
     @Transactional
     public Order placeOrder(String userId, Address shippingAddress, String promoCode) {
@@ -123,6 +127,7 @@ public class OrderService {
         }
 
         Order newOrder = new Order();
+
         newOrder.setUserId(userId);
         newOrder.setItems(orderItems);
         newOrder.setTotalAmount(cart.getTotalPrice());
@@ -134,6 +139,7 @@ public class OrderService {
         newOrder.setTotalAmount(totalAmount);
         newOrder.setDiscountAmount(discountAmount);
         newOrder.setPromoCodeUsed(promoCode);
+        newOrder.setEstimatedDelivery(LocalDate.now().plusDays(5));
 
         Order savedOrder = orderRepository.save(newOrder);
 
@@ -154,12 +160,11 @@ public class OrderService {
 
             String message = "⚠️ Low Stock Alert: " + itemName + " is down to " + currentStock + " units.";
 
-            Notification notification = new Notification(
+            notificationService.createNotification(
                     admin.getId().toString(),
-                    "STOCK_ALERT",
-                    message
+                    message,
+                    "STOCK_ALERT"
             );
-            notificationRepository.save(notification);
         }
     }
 
@@ -172,17 +177,30 @@ public class OrderService {
             throw new RuntimeException("Invalid status: " + newStatus);
         }
 
+        String oldStatus = order.getStatus();
+
         order.setStatus(newStatus);
         Order updatedOrder = orderRepository.save(order);
 
-        if ("SHIPPED".equals(newStatus)) {
-            String message = "Good news! Your order #" + order.getOrderNumber() + " has been shipped.";
-            Notification notification = new Notification(
-                    order.getUserId(),
-                    "ORDER_UPDATE",
-                    message
-            );
-            notificationRepository.save(notification);
+        if (!oldStatus.equals(newStatus)) {
+            String message = "";
+
+            if ("SHIPPED".equals(newStatus)) {
+                message = "Your order #" + order.getOrderNumber() + " has been shipped! It will arrive soon.";
+            } else if ("DELIVERED".equals(newStatus)) {
+                message = "Your order #" + order.getOrderNumber() + " has been delivered. Enjoy your scent!";
+            } else if ("CANCELLED".equals(newStatus)) {
+                message = "Your order #" + order.getOrderNumber() + " has been cancelled. Contact support for more details.";
+            }
+
+            // Only create notification if we have a message for this status change
+            if (!message.isEmpty()) {
+                notificationService.createNotification(
+                        order.getUserId(),
+                        message,
+                        "ORDER_UPDATE"
+                );
+            }
         }
 
         return updatedOrder;

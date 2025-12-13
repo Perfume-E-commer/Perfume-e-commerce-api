@@ -1,20 +1,27 @@
 package com.Perfume_e_commerce.models.marketing;
 
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
+import org.bson.types.ObjectId;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.LocalDateTime;
 
 @Document(collection = "notifications")
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 @Data
 public class Notification {
     @Id
     private String id;
 
-    private String userId; // Who receives this? (Admin's ID)
+    private ObjectId userId;
 
-    private String type; // "STOCK_ALERT", "ORDER_UPDATE", etc.
+    private String type;
 
     private String message;
 
@@ -22,9 +29,4 @@ public class Notification {
 
     private LocalDateTime createdAt = LocalDateTime.now();
 
-    public Notification(String userId, String type, String message) {
-        this.userId = userId;
-        this.type = type;
-        this.message = message;
-    }
 }

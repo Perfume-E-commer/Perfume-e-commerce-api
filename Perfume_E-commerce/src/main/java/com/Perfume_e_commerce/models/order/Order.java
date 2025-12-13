@@ -34,5 +34,7 @@ public class Order {
 
     private String paymentStatus; // "PAID", "PENDING"
 
+    private java.time.LocalDate estimatedDelivery;
+
     private LocalDateTime createdAt = LocalDateTime.now();
 }

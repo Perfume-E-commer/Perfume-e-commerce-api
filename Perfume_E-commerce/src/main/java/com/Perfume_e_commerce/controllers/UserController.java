@@ -32,7 +32,6 @@ public class UserController {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
 
         return userRepository.findByEmail(email).map(user -> {
-            // Update basic info
             if (request.getFirstName() != null) user.setFirstName(request.getFirstName());
             if (request.getLastName() != null) user.setLastName(request.getLastName());
             if (request.getPhoneNumber() != null) user.setPhoneNumber(request.getPhoneNumber());
