@@ -1,5 +1,6 @@
 package com.Perfume_e_commerce.controllers;
 
+import com.Perfume_e_commerce.dto.response.BillingResponse;
 import com.Perfume_e_commerce.models.order.Order;
 import com.Perfume_e_commerce.services.OrderService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -10,9 +11,9 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/admin/orders")
+@RequestMapping("/api/admin")
 @PreAuthorize("hasRole('ADMIN')")
-public class AdminOrderController {
+public class AdminController {
     @Autowired
     private OrderService orderService;
 
@@ -39,5 +40,11 @@ public class AdminOrderController {
             @RequestParam String status) {
 
         return ResponseEntity.ok(orderService.updateOrderStatus(id, status));
+    }
+
+    @GetMapping("/billing")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<List<BillingResponse>> getBillingRecords() {
+        return ResponseEntity.ok(orderService.getBillingRecords());
     }
 }
