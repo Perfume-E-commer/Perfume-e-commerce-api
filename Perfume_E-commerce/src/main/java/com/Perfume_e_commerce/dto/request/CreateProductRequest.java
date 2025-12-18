@@ -20,15 +20,25 @@ public class CreateProductRequest {
 
     private String description;
 
+    private String summary;
+    private String scent;
+    private String occasion;
+
     @NotNull(message = "Price is required")
     @DecimalMin(value = "0.01", message = "Price must be positive")
     private BigDecimal price;
 
+    @DecimalMin(value = "0.00", message = "Discount price cannot be negative")
+    private BigDecimal discountedPrice;
+
     @Min(value = 0, message = "Stock cannot be negative")
     private int stock;
 
+    @Min(value = 0)
+    private int minStockLevel = 5;
+
     @NotBlank(message = "Category is required")
-    @Pattern(regexp = "^(MEN|WOMEN)$", message = "Category must be MEN or WOMEN")
+    @Pattern(regexp = "^(MEN|WOMEN|UNISEX)$", message = "Category must be MEN or WOMEN")
     private String category;
 
     private List<ProductVariant> variants;
@@ -37,4 +47,10 @@ public class CreateProductRequest {
     private List<ScentNote> scentNotes;
 
     private String imageUrl;
+    private List<String> images;
+
+    private Boolean isActive;
+    private Boolean isFeatured;
+    private Boolean isOnSale;
+    private Boolean taxIncluded;
 }

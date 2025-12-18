@@ -31,6 +31,7 @@ public class NotificationService {
         notificationRepository.saveAll(notifs);
     }
 
+
     public void createNotification(String userId, String message, String type) {
         Notification notification = new Notification();
 

@@ -45,20 +45,7 @@ public class ProductController {
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> createProduct(@Valid @RequestBody CreateProductRequest request){
-
-        Product product = new Product();
-        product.setName(request.getName());
-        product.setBrand(request.getBrand());
-        product.setDescription(request.getDescription());
-        product.setPrice(request.getPrice());
-        product.setStock(request.getStock());
-        product.setCategory(request.getCategory());
-        product.setImageUrl(request.getImageUrl());
-        product.setVariants(request.getVariants());
-        product.setProductStory(request.getProductStory());
-        product.setFeatures(request.getFeatures());
-        product.setScentNotes(request.getScentNotes());
-
+        Product product = mapRequestToProduct(request); // Use helper method
         Product saveProduct = productService.saveProduct(product);
 
         return ResponseEntity.ok(saveProduct);
@@ -67,15 +54,9 @@ public class ProductController {
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> updateProduct(@PathVariable String id, @Valid @RequestBody CreateProductRequest request) {
-        // Reuse the Request DTO since the fields are the same
-        Product productDetails = new Product();
-        productDetails.setName(request.getName());
-        productDetails.setBrand(request.getBrand());
-        productDetails.setDescription(request.getDescription());
-        productDetails.setPrice(request.getPrice());
-        productDetails.setStock(request.getStock());
-        productDetails.setCategory(request.getCategory());
-        productDetails.setImageUrl(request.getImageUrl());
+        Product productDetails = mapRequestToProduct(request); // Use helper method
+
+        productDetails.setId(id);
 
         Product updatedProduct = productService.updateProduct(id, productDetails);
         return ResponseEntity.ok(updatedProduct);
@@ -111,4 +92,39 @@ public class ProductController {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
+
+    private Product mapRequestToProduct(CreateProductRequest request) {
+        Product product = new Product();
+        product.setName(request.getName());
+        product.setBrand(request.getBrand());
+        product.setDescription(request.getDescription());
+        product.setSummary(request.getSummary()); // New
+        product.setScent(request.getScent());     // New
+        product.setOccasion(request.getOccasion()); // New
+
+        product.setPrice(request.getPrice());
+        product.setDiscountedPrice(request.getDiscountedPrice()); // New
+
+        product.setStock(request.getStock());
+        product.setMinStockLevel(request.getMinStockLevel()); // New
+
+        product.setCategory(request.getCategory());
+
+        product.setImageUrl(request.getImageUrl());
+        product.setImages(request.getImages()); // New
+
+        product.setVariants(request.getVariants());
+        product.setProductStory(request.getProductStory());
+        product.setFeatures(request.getFeatures());
+        product.setScentNotes(request.getScentNotes());
+
+        // Handle Booleans (null check safety if needed, though Boolean defaults to null)
+        if (request.getIsActive() != null) product.setActive(request.getIsActive());
+        if (request.getIsFeatured() != null) product.setFeatured(request.getIsFeatured());
+        if (request.getIsOnSale() != null) product.setOnSale(request.getIsOnSale());
+        if (request.getTaxIncluded() != null) product.setTaxIncluded(request.getTaxIncluded());
+
+        return product;
+    }
+
 }

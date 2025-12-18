@@ -53,13 +53,40 @@ public class ProductService {
         ObjectId objectId = new ObjectId(id);
         return productRepository.findById(objectId)
                 .map(existingProduct -> {
+                    // --- Core Information ---
                     existingProduct.setName(updatedDetails.getName());
                     existingProduct.setBrand(updatedDetails.getBrand());
                     existingProduct.setDescription(updatedDetails.getDescription());
-                    existingProduct.setPrice(updatedDetails.getPrice());
-                    existingProduct.setStock(updatedDetails.getStock());
                     existingProduct.setCategory(updatedDetails.getCategory());
+
+                    // --- New Text Fields (The ones that were missing!) ---
+                    existingProduct.setSummary(updatedDetails.getSummary());
+                    existingProduct.setScent(updatedDetails.getScent());
+                    existingProduct.setOccasion(updatedDetails.getOccasion());
+
+                    // --- Pricing & Inventory ---
+                    existingProduct.setPrice(updatedDetails.getPrice());
+                    existingProduct.setDiscountedPrice(updatedDetails.getDiscountedPrice());
+                    existingProduct.setStock(updatedDetails.getStock());
+                    existingProduct.setMinStockLevel(updatedDetails.getMinStockLevel());
+
+                    // --- Media ---
                     existingProduct.setImageUrl(updatedDetails.getImageUrl());
+                    existingProduct.setImages(updatedDetails.getImages()); // Gallery
+
+                    // --- Rich Data Structures ---
+                    existingProduct.setVariants(updatedDetails.getVariants());
+                    existingProduct.setProductStory(updatedDetails.getProductStory());
+                    existingProduct.setFeatures(updatedDetails.getFeatures());
+                    existingProduct.setScentNotes(updatedDetails.getScentNotes());
+
+                    // --- Toggles/Booleans ---
+                    // Note: getters for booleans often follow 'isField()' or 'getField()' depending on Lombok config
+                    // Assuming Lombok @Data standard:
+                    existingProduct.setActive(updatedDetails.isActive());
+                    existingProduct.setFeatured(updatedDetails.isFeatured());
+                    existingProduct.setOnSale(updatedDetails.isOnSale());
+                    existingProduct.setTaxIncluded(updatedDetails.isTaxIncluded());
                     // We generally don't update 'createdAt' or 'id'
                     return productRepository.save(existingProduct);
                 })

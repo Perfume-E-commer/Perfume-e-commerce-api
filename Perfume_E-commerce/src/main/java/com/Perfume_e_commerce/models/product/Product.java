@@ -53,7 +53,7 @@ public class Product {
     private int orders = 0;
 
     @NotBlank
-    @Pattern(regexp = "^(MEN|WOMEN)$", message = "Invalid category. Must be MEN, WOMEN, or UNISEX")
+    @Pattern(regexp = "^(MEN|WOMEN|UNISEX)$", message = "Invalid category. Must be MEN, WOMEN, or UNISEX")
     @Indexed
     private String category;
 
