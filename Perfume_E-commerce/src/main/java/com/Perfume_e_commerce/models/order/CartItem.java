@@ -14,5 +14,6 @@ public class CartItem {
     private int quantity;
     private double price;
     private String size;
+    private String imageUrl;
 
 }

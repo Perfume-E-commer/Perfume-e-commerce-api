@@ -4,6 +4,9 @@ import com.Perfume_e_commerce.Repositories.UserRepository;
 import com.Perfume_e_commerce.dto.AddToCartRequest;
 import com.Perfume_e_commerce.models.order.Cart;
 import com.Perfume_e_commerce.services.CartService;
+
+import java.util.Map;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -18,16 +21,14 @@ public class CartController {
     private CartService cartService;
 
     @Autowired
-    private UserRepository userRepository; // To look up User ID from email
+    private UserRepository userRepository; 
 
-    // Helper method to get the currently logged-in user's ID
     private String getCurrentUserId() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication != null && authentication.getPrincipal() instanceof UserDetails) {
             UserDetails userDetails = (UserDetails) authentication.getPrincipal();
             String email = userDetails.getUsername();
 
-            // Find the user in DB to get the actual ID (ObjectId)
             return userRepository.findByEmail(email)
                     .map(user -> user.getId().toString())
                     .orElseThrow(() -> new RuntimeException("Authenticated user not found"));
@@ -55,9 +56,25 @@ public class CartController {
     }
 
     @DeleteMapping("/remove/{productId}")
-    public ResponseEntity<Cart> removeFromCart(@PathVariable String productId) {
+    public ResponseEntity<Cart> removeFromCart(
+            @PathVariable String productId,
+            @RequestParam(required = false) String size) { 
+
         String userId = getCurrentUserId();
-        Cart updatedCart = cartService.removeFromCart(userId, productId);
+        Cart updatedCart = cartService.removeFromCart(userId, productId, size);
+        return ResponseEntity.ok(updatedCart);
+    }
+
+    @PutMapping("/update/{productId}")
+    public ResponseEntity<Cart> updateQuantity(
+            @PathVariable String productId,
+            @RequestBody Map<String, Object> payload) {
+
+        String userId = getCurrentUserId();
+        int quantity = (int) payload.get("quantity");
+        String size = (String) payload.get("size"); 
+
+        Cart updatedCart = cartService.updateQuantity(userId, productId, quantity, size);
         return ResponseEntity.ok(updatedCart);
     }
 }

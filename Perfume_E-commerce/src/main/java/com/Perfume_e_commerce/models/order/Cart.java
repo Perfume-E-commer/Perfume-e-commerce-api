@@ -18,6 +18,7 @@ public class Cart {
     private List<CartItem> items = new ArrayList<>();
 
     private double totalPrice = 0.0;
+    
 
     public void calculateTotal() {
         this.totalPrice = this.items.stream()
