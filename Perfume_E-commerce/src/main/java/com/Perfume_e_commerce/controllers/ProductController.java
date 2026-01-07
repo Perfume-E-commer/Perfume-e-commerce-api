@@ -6,6 +6,7 @@ import com.Perfume_e_commerce.services.ProductService;
 import com.Perfume_e_commerce.models.product.Product;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -24,8 +25,13 @@ public class ProductController {
     private ProductService productService;
 
     @GetMapping
-    public List<Product> getAllProducts() {
-        return productService.getAllActiveProducts();
+    public ResponseEntity<Page<Product>> getAllProducts(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) String search
+    ) {
+        Page<Product> productPage = productService.getAllProducts(page, size, search);
+        return ResponseEntity.ok(productPage);
     }
 
     @GetMapping("/{id}")

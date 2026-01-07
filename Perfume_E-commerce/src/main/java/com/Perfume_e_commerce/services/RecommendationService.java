@@ -24,12 +24,10 @@ public class RecommendationService {
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         List<String> views = user.getViewedProductIds();
-
         views.remove(productId);
-
         views.add(productId);
 
-        if (views.size() > 20) {
+        if (views.size() > 10) {
             views.remove(0);
         }
 

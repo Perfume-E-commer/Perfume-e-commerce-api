@@ -7,6 +7,9 @@ import com.Perfume_e_commerce.models.product.Rating;
 import com.Perfume_e_commerce.models.user.User;
 import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import java.util.Map;
 import java.util.List;
@@ -156,6 +159,19 @@ public class ProductService {
         product.setAverageRating(Math.round(average * 10.0) / 10.0);
 
         return productRepository.save(product);
+    }
+
+    public Page<Product> getAllProducts(int page, int size, String search) {
+        // Create a "page request" (Page 0 is the first page)
+        Pageable pageable = PageRequest.of(page, size);
+
+        if (search != null && !search.isEmpty()) {
+            // If searching, use the search method
+            return productRepository.findByNameContainingIgnoreCaseAndIsActiveTrue(search, pageable);
+        } else {
+            // Otherwise, just return the page
+            return productRepository.findByIsActiveTrue(pageable);
+        }
     }
 
 }
