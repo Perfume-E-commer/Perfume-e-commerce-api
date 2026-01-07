@@ -22,6 +22,8 @@ import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.math.BigDecimal;
 import java.util.stream.Collectors;
 
 import java.time.LocalDate;
@@ -225,7 +227,7 @@ public class OrderService {
                     .orderId(order.getId().toString())
                     .orderNumber(order.getOrderNumber())
                     .customerEmail(email)
-                    .totalAmount(order.getTotal())
+                    .totalAmount(BigDecimal.valueOf(order.getTotalAmount()))
                     .paymentStatus(order.getPaymentStatus()) // Ensure Order model has this (default "PAID")
                     .date(order.getCreatedAt()) // Assuming Order uses LocalDateTime
                     .build();
