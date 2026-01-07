@@ -7,7 +7,6 @@ import com.Perfume_e_commerce.Repositories.ProductRepository;
 import com.Perfume_e_commerce.Repositories.UserRepository;
 import com.Perfume_e_commerce.dto.response.BillingResponse;
 import com.Perfume_e_commerce.dto.response.DashboardStatsResponse;
-import com.Perfume_e_commerce.models.marketing.Notification;
 import com.Perfume_e_commerce.models.marketing.Promotion;
 import com.Perfume_e_commerce.models.order.Cart;
 import com.Perfume_e_commerce.models.order.CartItem;
@@ -20,6 +19,9 @@ import com.Perfume_e_commerce.models.user.Address;
 import com.Perfume_e_commerce.models.user.User;
 import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -262,7 +264,24 @@ public class OrderService {
         return orderRepository.findByUserId(userId);
     }
 
+    public Page<Order> getAllOrders(int page, int size, String search) {
+        Pageable pageable = PageRequest.of(page, size);
+        if (search != null && !search.isEmpty()) {
+            return orderRepository.findByOrderNumberContainingIgnoreCase(search, pageable);
+        } else {
+            return orderRepository.findAll(pageable);
+        }
+    }
+
     public List<Order> getAllOrders() {
         return orderRepository.findAll();
+    }
+
+    public List<Order> getOrdersByUser(String email) {
+        return orderRepository.findByUserEmail(email);
+    }
+
+    public Order saveOrder(Order order) {
+        return orderRepository.save(order);
     }
 }

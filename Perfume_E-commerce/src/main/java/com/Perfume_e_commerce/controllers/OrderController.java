@@ -6,7 +6,9 @@ import com.Perfume_e_commerce.models.order.Order;
 import com.Perfume_e_commerce.services.OrderService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -43,10 +45,19 @@ public class OrderController {
         return ResponseEntity.ok(order);
     }
 
-    @GetMapping
+    @GetMapping("/my-orders")
     public ResponseEntity<List<Order>> getMyOrders() {
-        String userId = getCurrentUserId();
-        List<Order> orders = orderService.getUserOrders(userId);
-        return ResponseEntity.ok(orders);
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        return ResponseEntity.ok(orderService.getOrdersByUser(email));
+    }
+
+    @GetMapping
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Page<Order>> getAllOrders(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) String search
+    ) {
+        return ResponseEntity.ok(orderService.getAllOrders(page, size, search));
     }
 }

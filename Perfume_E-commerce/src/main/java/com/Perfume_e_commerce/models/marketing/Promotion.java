@@ -15,11 +15,11 @@ public class Promotion {
     private String id;
 
     @Indexed(unique = true)
-    private String code; // e.g., "SUMMER10"
+    private String code;
 
     private String description;
 
-    private int discountPercent; // e.g., 10 for 10%
+    private int discountPercent;
 
     private Date validUntil;
 

@@ -3,6 +3,9 @@ package com.Perfume_e_commerce.services;
 import com.Perfume_e_commerce.Repositories.PromotionRepository;
 import com.Perfume_e_commerce.models.marketing.Promotion;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.Date;
@@ -20,8 +23,12 @@ public class PromotionService {
         return promotionRepository.save(promotion);
     }
 
-    public List<Promotion> getAllPromotions() {
-        return promotionRepository.findAll();
+    public Page<Promotion> getAllPromotions(int page, int size, String search) {
+        Pageable pageable = PageRequest.of(page, size);
+        if (search != null && !search.isEmpty()) {
+            return promotionRepository.findByCodeContainingIgnoreCase(search, pageable);
+        }
+        return promotionRepository.findAll(pageable);
     }
 
     public Promotion validatePromotion(String code) {
