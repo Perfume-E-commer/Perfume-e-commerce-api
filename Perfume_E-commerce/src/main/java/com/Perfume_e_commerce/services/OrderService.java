@@ -253,13 +253,7 @@ public class OrderService {
                 .filter(o -> "CANCELLED".equalsIgnoreCase(o.getStatus()))
                 .count();
 
-        // 4. Unique Customers (Count unique userIds)
-        long totalCustomers = allOrders.stream()
-                .map(Order::getUserId)
-                .distinct()
-                .count();
-
-        return new DashboardStatsResponse(totalSales, totalOrders, totalCustomers, pendingCount, canceledCount);
+        return new DashboardStatsResponse(totalSales, totalOrders, pendingCount, canceledCount);
     }
 
     public List<Order> getUserOrders(String userId) {
