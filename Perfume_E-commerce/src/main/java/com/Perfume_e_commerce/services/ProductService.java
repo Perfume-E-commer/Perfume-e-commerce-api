@@ -23,12 +23,22 @@ public class ProductService {
     @Autowired
     private ProductRepository productRepository;
 
-    public List<Product> findByCategoryAndIsActiveTrue(String category){
-        return productRepository.findByCategoryAndActiveTrue(category);
+    public Page<Product> getAllProducts(int page, int size, String search) {
+        Pageable pageable = PageRequest.of(page, size);
+
+        if (search != null && !search.isEmpty()) {
+            // ✅ FIX: Use general search (ignore active status)
+            return productRepository.findByNameContainingIgnoreCase(search, pageable);
+        } else {
+            // ✅ FIX: Use findAll to get EVERYTHING (ignore active status)
+            return productRepository.findAll(pageable);
+        }
     }
 
-    public Optional<Product> findById(String id){
-        return productRepository.findById(id);
+    // --- PUBLIC STORE METHODS ---
+
+    public List<Product> findByCategoryAndIsActiveTrue(String category){
+        return productRepository.findByCategoryAndActiveTrue(category);
     }
 
     public List<Product> getAllActiveProducts() {
@@ -38,7 +48,16 @@ public class ProductService {
     public Optional<Product> getProductById(String id) {
         try {
             ObjectId objectId = new ObjectId(id);
-            return productRepository.findByIdAndActiveTrue(objectId);
+            return productRepository.findById(objectId);
+        } catch (IllegalArgumentException e) {
+            return Optional.empty();
+        }
+    }
+
+    public Optional<Product> findById(String id){
+        try {
+            ObjectId objectId = new ObjectId(id);
+            return productRepository.findById(objectId);
         } catch (IllegalArgumentException e) {
             return Optional.empty();
         }
@@ -56,41 +75,27 @@ public class ProductService {
         ObjectId objectId = new ObjectId(id);
         return productRepository.findById(objectId)
                 .map(existingProduct -> {
-                    // --- Core Information ---
                     existingProduct.setName(updatedDetails.getName());
                     existingProduct.setBrand(updatedDetails.getBrand());
                     existingProduct.setDescription(updatedDetails.getDescription());
                     existingProduct.setCategory(updatedDetails.getCategory());
-
-                    // --- New Text Fields (The ones that were missing!) ---
                     existingProduct.setSummary(updatedDetails.getSummary());
                     existingProduct.setScent(updatedDetails.getScent());
                     existingProduct.setOccasion(updatedDetails.getOccasion());
-
-                    // --- Pricing & Inventory ---
                     existingProduct.setPrice(updatedDetails.getPrice());
                     existingProduct.setDiscountedPrice(updatedDetails.getDiscountedPrice());
                     existingProduct.setStock(updatedDetails.getStock());
                     existingProduct.setMinStockLevel(updatedDetails.getMinStockLevel());
-
-                    // --- Media ---
                     existingProduct.setImageUrl(updatedDetails.getImageUrl());
-                    existingProduct.setImages(updatedDetails.getImages()); // Gallery
-
-                    // --- Rich Data Structures ---
+                    existingProduct.setImages(updatedDetails.getImages());
                     existingProduct.setVariants(updatedDetails.getVariants());
                     existingProduct.setProductStory(updatedDetails.getProductStory());
                     existingProduct.setFeatures(updatedDetails.getFeatures());
                     existingProduct.setScentNotes(updatedDetails.getScentNotes());
-
-                    // --- Toggles/Booleans ---
-                    // Note: getters for booleans often follow 'isField()' or 'getField()' depending on Lombok config
-                    // Assuming Lombok @Data standard:
                     existingProduct.setActive(updatedDetails.isActive());
                     existingProduct.setFeatured(updatedDetails.isFeatured());
                     existingProduct.setOnSale(updatedDetails.isOnSale());
                     existingProduct.setTaxIncluded(updatedDetails.isTaxIncluded());
-                    // We generally don't update 'createdAt' or 'id'
                     return productRepository.save(existingProduct);
                 })
                 .orElseThrow(() -> new RuntimeException("Product not found with id " + id));
@@ -102,31 +107,14 @@ public class ProductService {
                 .map(product -> {
                     updates.forEach((key, value) -> {
                         switch (key) {
-                            case "name":
-                                product.setName((String) value);
-                                break;
-                            case "brand":
-                                product.setBrand((String) value);
-                                break;
-                            case "description":
-                                product.setDescription((String) value);
-                                break;
-                            case "price":
-                                product.setPrice(new java.math.BigDecimal(String.valueOf(value)));
-                                break;
-                            case "stock":
-                                product.setStock((Integer) value);
-                                break;
-                            case "category":
-                                product.setCategory((String) value);
-                                break;
-                            case "imageUrl":
-                                product.setImageUrl((String) value);
-                                break;
-                            case "isActive":
-                                product.setActive((Boolean) value);
-                                break;
-
+                            case "name": product.setName((String) value); break;
+                            case "brand": product.setBrand((String) value); break;
+                            case "description": product.setDescription((String) value); break;
+                            case "price": product.setPrice(new java.math.BigDecimal(String.valueOf(value))); break;
+                            case "stock": product.setStock((Integer) value); break;
+                            case "category": product.setCategory((String) value); break;
+                            case "imageUrl": product.setImageUrl((String) value); break;
+                            case "isActive": product.setActive((Boolean) value); break;
                         }
                     });
                     return productRepository.save(product);
@@ -135,7 +123,7 @@ public class ProductService {
     }
 
     public Product addRating(String productId, String userEmail, int stars, String comment) {
-        Product product = getProductById(productId)
+        Product product = findById(productId) // Use general findById here
                 .orElseThrow(() -> new RuntimeException("Product not found"));
 
         User user = userRepository.findByEmail(userEmail)
@@ -147,8 +135,10 @@ public class ProductService {
         newRating.setStars(stars);
         newRating.setComment(comment);
 
+        if (product.getRatings() == null) {
+            product.setRatings(new java.util.ArrayList<>());
+        }
         product.getRatings().add(newRating);
-
         product.setTotalReviews(product.getRatings().size());
 
         double average = product.getRatings().stream()
@@ -161,30 +151,16 @@ public class ProductService {
         return productRepository.save(product);
     }
 
-    public Page<Product> getAllProducts(int page, int size, String search) {
-        // Create a "page request" (Page 0 is the first page)
-        Pageable pageable = PageRequest.of(page, size);
-
-        if (search != null && !search.isEmpty()) {
-            // If searching, use the search method
-            return productRepository.findByNameContainingIgnoreCaseAndActiveTrue(search, pageable);
-        } else {
-            // Otherwise, just return the page
-            return productRepository.findByActiveTrue(pageable);
-        }
-    }
-
     public Page<Product> searchProducts(String keyword, String category, Double minPrice, Double maxPrice, int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
 
         String searchKey = (keyword != null) ? keyword : "";
-        String catKey = (category != null && !category.equals("All")) ? category : ""; // "All" or null means matches everything
+        String catKey = (category != null && !category.equals("All")) ? category : "";
         double min = (minPrice != null) ? minPrice : 0.0;
-        double max = (maxPrice != null) ? maxPrice : 1000000.0; // High default max
+        double max = (maxPrice != null) ? maxPrice : 1000000.0;
 
         String finalCatRegex = catKey.isEmpty() ? "" : "^" + catKey + "$";
 
         return productRepository.searchProducts(searchKey, finalCatRegex, min, max, pageable);
     }
-
 }

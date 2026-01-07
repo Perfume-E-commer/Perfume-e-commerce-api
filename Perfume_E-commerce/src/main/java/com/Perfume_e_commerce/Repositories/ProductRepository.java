@@ -6,11 +6,16 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.data.mongodb.repository.Query;
+import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
 
+@Repository
 public interface ProductRepository extends MongoRepository<Product, ObjectId> {
+
+    Page<Product> findByNameContainingIgnoreCase(String name, Pageable pageable);
+
     List<Product> findByActiveTrue();
 
     Page<Product> findByActiveTrue(Pageable pageable);
@@ -18,8 +23,6 @@ public interface ProductRepository extends MongoRepository<Product, ObjectId> {
     List<Product> findByCategoryAndActiveTrue(String category);
 
     Page<Product> findByNameContainingIgnoreCaseAndActiveTrue(String name, Pageable pageable);
-
-    Optional<Product> findById(String id);
 
     Optional<Product> findByIdAndActiveTrue(ObjectId id);
 
