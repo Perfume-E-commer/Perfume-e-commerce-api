@@ -5,6 +5,7 @@ import com.Perfume_e_commerce.models.marketing.Notification;
 import com.Perfume_e_commerce.models.order.Cart;
 import com.Perfume_e_commerce.models.order.Order;
 import com.Perfume_e_commerce.models.product.Category;
+import com.Perfume_e_commerce.models.product.Product;
 import com.Perfume_e_commerce.models.user.User;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -23,6 +24,9 @@ public class DevController {
     private CartRepository cartRepository;
 
     @Autowired
+    private ProductRepository productRepository;
+
+    @Autowired
     private UserRepository userRepository;
 
     @Autowired
@@ -35,6 +39,11 @@ public class DevController {
     @GetMapping("/orders")
     public List<Order> getAllOrders() {
         return orderRepository.findAll();
+    }
+
+    @GetMapping("/products")
+    public List<Product> getAllProducts() {
+        return productRepository.findAll();
     }
 
     // GET /api/dev/carts

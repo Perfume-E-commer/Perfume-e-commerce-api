@@ -177,14 +177,12 @@ public class ProductService {
     public Page<Product> searchProducts(String keyword, String category, Double minPrice, Double maxPrice, int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
 
-        // Handle nulls/defaults
-        String searchKey = (keyword != null) ? keyword : "";
+Autowired        String searchKey = (keyword != null) ? keyword : "";
         String catKey = (category != null && !category.equals("All")) ? category : ""; // "All" or null means matches everything
         double min = (minPrice != null) ? minPrice : 0.0;
         double max = (maxPrice != null) ? maxPrice : 1000000.0; // High default max
 
-        // Use the regex "." to match anything if category is empty
-        String finalCatRegex = catKey.isEmpty() ? "." : "^" + catKey + "$";
+        String finalCatRegex = catKey.isEmpty() ? "" : "^" + catKey + "$";
 
         return productRepository.searchProducts(searchKey, finalCatRegex, min, max, pageable);
     }

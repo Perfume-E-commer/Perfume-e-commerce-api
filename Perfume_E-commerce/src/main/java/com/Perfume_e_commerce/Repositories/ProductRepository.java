@@ -22,7 +22,7 @@ public interface ProductRepository extends MongoRepository<Product, ObjectId> {
     Optional<Product> findById(String id);
     Optional<Product> findByIdAndIsActiveTrue(ObjectId id);
 
-    @Query("{ 'isActive': true, " +
+    @Query("{ 'active': true, " +
             "'$and': [ " +
             "  { '$or': [ { 'name': { '$regex': ?0, '$options': 'i' } }, { 'brand': { '$regex': ?0, '$options': 'i' } } ] }, " +
             "  { 'category': { '$regex': ?1, '$options': 'i' } }, " +
