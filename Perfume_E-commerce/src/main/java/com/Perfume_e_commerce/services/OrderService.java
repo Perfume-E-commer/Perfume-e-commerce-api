@@ -6,6 +6,7 @@ import com.Perfume_e_commerce.Repositories.OrderRepository;
 import com.Perfume_e_commerce.Repositories.ProductRepository;
 import com.Perfume_e_commerce.Repositories.UserRepository;
 import com.Perfume_e_commerce.dto.response.BillingResponse;
+import com.Perfume_e_commerce.dto.response.DashboardStatsResponse;
 import com.Perfume_e_commerce.models.marketing.Notification;
 import com.Perfume_e_commerce.models.marketing.Promotion;
 import com.Perfume_e_commerce.models.order.Cart;
@@ -229,6 +230,36 @@ public class OrderService {
                     .date(order.getCreatedAt()) // Assuming Order uses LocalDateTime
                     .build();
         }).collect(Collectors.toList());
+    }
+
+    public DashboardStatsResponse getDashboardStats() {
+        List<Order> allOrders = orderRepository.findAll();
+
+        // 1. Total Sales (Sum of totalAmount for non-cancelled orders)
+        double totalSales = allOrders.stream()
+                .filter(o -> !"CANCELLED".equalsIgnoreCase(o.getStatus()))
+                .mapToDouble(Order::getTotalAmount)
+                .sum();
+
+        // 2. Total Orders
+        long totalOrders = allOrders.size();
+
+        // 3. Pending & Canceled Counts
+        long pendingCount = allOrders.stream()
+                .filter(o -> "PENDING".equalsIgnoreCase(o.getStatus()) || "CONFIRMED".equalsIgnoreCase(o.getStatus()))
+                .count();
+
+        long canceledCount = allOrders.stream()
+                .filter(o -> "CANCELLED".equalsIgnoreCase(o.getStatus()))
+                .count();
+
+        // 4. Unique Customers (Count unique userIds)
+        long totalCustomers = allOrders.stream()
+                .map(Order::getUserId)
+                .distinct()
+                .count();
+
+        return new DashboardStatsResponse(totalSales, totalOrders, totalCustomers, pendingCount, canceledCount);
     }
 
     public List<Order> getUserOrders(String userId) {

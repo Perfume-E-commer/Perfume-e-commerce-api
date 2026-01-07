@@ -1,6 +1,7 @@
 package com.Perfume_e_commerce.controllers;
 
 import com.Perfume_e_commerce.dto.response.BillingResponse;
+import com.Perfume_e_commerce.dto.response.DashboardStatsResponse;
 import com.Perfume_e_commerce.models.order.Order;
 import com.Perfume_e_commerce.services.OrderService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,6 +22,11 @@ public class AdminController {
     public ResponseEntity<List<Order>> getAllOrders() {
         List<Order> orders = orderService.getAllOrders();
         return ResponseEntity.ok(orders);
+    }
+
+    @GetMapping("/dashboard-stats")
+    public ResponseEntity<DashboardStatsResponse> getDashboardStats() {
+        return ResponseEntity.ok(orderService.getDashboardStats());
     }
 
     @PutMapping("/{id}/status")
