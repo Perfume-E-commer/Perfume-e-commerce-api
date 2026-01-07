@@ -11,16 +11,17 @@ import java.util.List;
 import java.util.Optional;
 
 public interface ProductRepository extends MongoRepository<Product, ObjectId> {
-    List<Product> findByIsActiveTrue();
+    List<Product> findByActiveTrue();
 
-    Page<Product> findByIsActiveTrue(Pageable pageable);
+    Page<Product> findByActiveTrue(Pageable pageable);
 
+    List<Product> findByCategoryAndActiveTrue(String category);
 
-    List<Product> findByCategoryAndIsActiveTrue(String category);
-    Page<Product> findByNameContainingIgnoreCaseAndIsActiveTrue(String name, Pageable pageable);
+    Page<Product> findByNameContainingIgnoreCaseAndActiveTrue(String name, Pageable pageable);
 
     Optional<Product> findById(String id);
-    Optional<Product> findByIdAndIsActiveTrue(ObjectId id);
+
+    Optional<Product> findByIdAndActiveTrue(ObjectId id);
 
     @Query("{ 'active': true, " +
             "'$and': [ " +

@@ -24,7 +24,7 @@ public class ProductService {
     private ProductRepository productRepository;
 
     public List<Product> findByCategoryAndIsActiveTrue(String category){
-        return productRepository.findByCategoryAndIsActiveTrue(category);
+        return productRepository.findByCategoryAndActiveTrue(category);
     }
 
     public Optional<Product> findById(String id){
@@ -32,13 +32,13 @@ public class ProductService {
     }
 
     public List<Product> getAllActiveProducts() {
-        return productRepository.findByIsActiveTrue();
+        return productRepository.findByActiveTrue();
     }
 
     public Optional<Product> getProductById(String id) {
         try {
             ObjectId objectId = new ObjectId(id);
-            return productRepository.findByIdAndIsActiveTrue(objectId);
+            return productRepository.findByIdAndActiveTrue(objectId);
         } catch (IllegalArgumentException e) {
             return Optional.empty();
         }
@@ -167,17 +167,17 @@ public class ProductService {
 
         if (search != null && !search.isEmpty()) {
             // If searching, use the search method
-            return productRepository.findByNameContainingIgnoreCaseAndIsActiveTrue(search, pageable);
+            return productRepository.findByNameContainingIgnoreCaseAndActiveTrue(search, pageable);
         } else {
             // Otherwise, just return the page
-            return productRepository.findByIsActiveTrue(pageable);
+            return productRepository.findByActiveTrue(pageable);
         }
     }
 
     public Page<Product> searchProducts(String keyword, String category, Double minPrice, Double maxPrice, int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
 
-Autowired        String searchKey = (keyword != null) ? keyword : "";
+        String searchKey = (keyword != null) ? keyword : "";
         String catKey = (category != null && !category.equals("All")) ? category : ""; // "All" or null means matches everything
         double min = (minPrice != null) ? minPrice : 0.0;
         double max = (maxPrice != null) ? maxPrice : 1000000.0; // High default max

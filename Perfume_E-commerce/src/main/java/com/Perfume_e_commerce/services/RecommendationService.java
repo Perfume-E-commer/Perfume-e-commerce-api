@@ -42,7 +42,7 @@ public class RecommendationService {
         List<String> history = user.getViewedProductIds();
 
         if (history.isEmpty()) {
-            return productRepository.findByIsActiveTrue().stream()
+            return productRepository.findByActiveTrue().stream()
                     .limit(5)
                     .collect(Collectors.toList());
         }
@@ -52,7 +52,7 @@ public class RecommendationService {
 
         if (lastProduct == null) return Collections.emptyList();
 
-        List<Product> recommendations = productRepository.findByCategoryAndIsActiveTrue(lastProduct.getCategory());
+        List<Product> recommendations = productRepository.findByCategoryAndActiveTrue(lastProduct.getCategory());
 
         return recommendations.stream()
                 .filter(p -> !p.getId().equals(lastViewedId))
