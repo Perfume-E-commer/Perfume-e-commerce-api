@@ -2,6 +2,7 @@ package com.Perfume_e_commerce.controllers;
 
 import com.Perfume_e_commerce.Repositories.*;
 import com.Perfume_e_commerce.models.marketing.Notification;
+import com.Perfume_e_commerce.models.marketing.Promotion;
 import com.Perfume_e_commerce.models.order.Cart;
 import com.Perfume_e_commerce.models.order.Order;
 import com.Perfume_e_commerce.models.product.Category;
@@ -25,6 +26,9 @@ public class DevController {
 
     @Autowired
     private ProductRepository productRepository;
+
+    @Autowired
+    private PromotionRepository promotionRepository;
 
     @Autowired
     private UserRepository userRepository;
@@ -68,5 +72,10 @@ public class DevController {
     @GetMapping("/categories")
     public List<Category> getAllCategories() {
         return categoryRepository.findAll();
+    }
+
+    @GetMapping("/promotions")
+    public List<Promotion> getAllPromotions() {
+        return promotionRepository.findAll();
     }
 }
