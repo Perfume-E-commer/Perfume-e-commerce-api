@@ -22,6 +22,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -265,12 +266,28 @@ public class OrderService {
     }
 
     public Page<Order> getAllOrders(int page, int size, String search) {
-        Pageable pageable = PageRequest.of(page, size);
+        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+
+        Page<Order> orders;
+
         if (search != null && !search.isEmpty()) {
-            return orderRepository.findByOrderNumberContainingIgnoreCase(search, pageable);
+            orders = orderRepository.findByOrderNumberContainingIgnoreCase(search, pageable);
         } else {
-            return orderRepository.findAll(pageable);
+            orders = orderRepository.findAll(pageable);
         }
+
+        orders.forEach(order -> {
+            if (order.getUserId() != null) {
+                try {
+                    userRepository.findById(new ObjectId(order.getUserId())).ifPresent(user -> {
+                        order.setUserEmail(user.getEmail());
+                    });
+                } catch (Exception e) {
+                }
+            }
+        });
+
+        return orders;
     }
 
     public List<Order> getAllOrders() {
