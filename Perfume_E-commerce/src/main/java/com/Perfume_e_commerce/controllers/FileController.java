@@ -16,7 +16,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api")
-@CrossOrigin
+@CrossOrigin(origins = "*", maxAge = 3600)
 public class FileController {
     @Autowired
     private FileStorageService fileStorageService;
