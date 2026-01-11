@@ -16,12 +16,10 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -33,7 +31,6 @@ public class CustomerService {
 
     public Page<CustomerListItemResponse> searchCustomersWithAnalytics(String search, int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
-
         Page<User> userPage = userRepository.findAll(pageable);
 
         List<String> userIds = userPage.getContent().stream()
@@ -49,10 +46,9 @@ public class CustomerService {
 
         List<CustomerListItemResponse> content = userPage.getContent().stream().map(user -> {
             String uid = user.getId().toString();
-            List<Order> userOrders = ordersByUser.getOrDefault(user.getId(), Collections.emptyList());
+            List<Order> userOrders = ordersByUser.getOrDefault(uid, Collections.emptyList());
 
             long orderCount = userOrders.size();
-
             double totalSpent = userOrders.stream()
                     .map(Order::getTotal)
                     .filter(Objects::nonNull)
@@ -67,15 +63,9 @@ public class CustomerService {
                     .orElse(null);
 
             return new CustomerListItemResponse(
-                    uid,
-                    user.getFirstName(),
-                    user.getLastName(),
-                    user.getEmail(),
-                    true, // Assuming active if they exist, or user.isActive()
-                    user.getCreatedAt() != null ? user.getCreatedAt().toString() : "",
-                    orderCount,
-                    totalSpent,
-                    lastActive
+                    uid, user.getFirstName(), user.getLastName(), user.getEmail(),
+                    true, user.getCreatedAt() != null ? user.getCreatedAt().toString() : "",
+                    orderCount, totalSpent, lastActive
             );
         }).collect(Collectors.toList());
 
@@ -116,15 +106,69 @@ public class CustomerService {
 
         List<CustomerDetailResponse.OrderHistoryItem> historyItems = userOrders.stream()
                 .map(order -> new CustomerDetailResponse.OrderHistoryItem(
-                        order.getId(),
-                        order.getId(), // Using ID as Order Number
+                        order.getId(), order.getId(),
                         order.getCreatedAt() != null ? order.getCreatedAt().toString() : "",
-                        order.getTotal() != null ? order.getTotal().doubleValue() : 0.0, // FIX: BigDecimal -> double
+                        order.getTotal() != null ? order.getTotal().doubleValue() : 0.0,
                         order.getStatus(),
                         order.getItems() != null ? order.getItems().size() : 0
                 ))
                 .collect(Collectors.toList());
 
         return new CustomerDetailResponse(user, historyItems);
+    }
+
+    public byte[] exportCustomersToCSV() {
+        List<User> users = userRepository.findAll();
+        List<Order> allOrders = orderRepository.findAll();
+
+        Map<String, List<Order>> ordersByUser = allOrders.stream()
+                .filter(o -> o.getUserId() != null)
+                .collect(Collectors.groupingBy(Order::getUserId));
+
+        StringBuilder csv = new StringBuilder();
+        csv.append("User ID,First Name,Last Name,Email,Joined Date,Total Orders,Total Spent,Last Active\n");
+
+        for (User user : users) {
+            String uid = user.getId().toString();
+            List<Order> userOrders = ordersByUser.getOrDefault(uid, Collections.emptyList());
+
+            long count = userOrders.size();
+            double total = userOrders.stream()
+                    .map(Order::getTotal)
+                    .filter(Objects::nonNull)
+                    .mapToDouble(BigDecimal::doubleValue)
+                    .sum();
+
+            String lastActive = userOrders.stream()
+                    .map(Order::getCreatedAt)
+                    .filter(Objects::nonNull)
+                    .max(LocalDateTime::compareTo)
+                    .map(LocalDateTime::toString)
+                    .orElse("N/A");
+
+            csv.append(String.join(",",
+                    uid,
+                    escapeCsv(user.getFirstName()),
+                    escapeCsv(user.getLastName()),
+                    escapeCsv(user.getEmail()),
+                    user.getCreatedAt() != null ? user.getCreatedAt().toString() : "",
+                    String.valueOf(count),
+                    String.format("%.2f", total),
+                    lastActive
+            ));
+            csv.append("\n");
+        }
+
+        return csv.toString().getBytes(StandardCharsets.UTF_8);
+    }
+
+    private String escapeCsv(String data) {
+        if (data == null) return "";
+        String escaped = data.replaceAll("\\R", " "); // Remove newlines
+        if (data.contains(",") || data.contains("\"") || data.contains("'")) {
+            data = data.replace("\"", "\"\"");
+            escaped = "\"" + data + "\"";
+        }
+        return escaped;
     }
 }
