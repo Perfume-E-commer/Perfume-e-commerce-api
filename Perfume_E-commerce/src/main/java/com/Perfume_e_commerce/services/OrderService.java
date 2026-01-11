@@ -27,9 +27,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -61,10 +63,10 @@ public class OrderService {
     private NotificationService notificationService;
 
     @Transactional
-    public Order placeOrder(String userId, Address shippingAddress, String promoCode) {
+    public Order placeOrder(String userId, String userEmail, Address shippingAddress, String promoCode) {
 
         Cart cart = cartService.getCartByUserId(userId);
-        if (cart.getItems().isEmpty()) {
+        if (cart == null || cart.getItems().isEmpty()) {
             throw new RuntimeException("Cart is empty. Cannot place order.");
         }
 
@@ -73,7 +75,6 @@ public class OrderService {
 
         if (promoCode != null && !promoCode.isEmpty()) {
             Promotion promo = promotionService.validatePromotion(promoCode);
-
             discountAmount = totalAmount * (promo.getDiscountPercentage() / 100.0);
             totalAmount = totalAmount - discountAmount;
         }
@@ -84,47 +85,51 @@ public class OrderService {
                     .orElseThrow(() -> new RuntimeException("Product not found: " + cartItem.getProductId()));
 
             int quantityToReduce = cartItem.getQuantity();
-            int currentVariantStock = 0;
-            int currentVariantMinStock = product.getMinStockLevel();
+            int currentStock = 0;
             boolean isVariant = cartItem.getSize() != null && !cartItem.getSize().isEmpty();
 
+            // 🟢 ROBUST STOCK LOGIC (Fixes "Variant Not Found" Crash)
             if (isVariant) {
-                ProductVariant variant = product.getVariantBySize(cartItem.getSize())
-                        .orElseThrow(() -> new RuntimeException("Variant not found: " + cartItem.getSize()));
+                // Try to find the variant
+                Optional<ProductVariant> variantOpt = product.getVariantBySize(cartItem.getSize());
 
-                if (variant.getStock() < quantityToReduce) {
-                    throw new RuntimeException("Not enough stock for variant: " + variant.getSize());
+                if (variantOpt.isPresent()) {
+                    ProductVariant variant = variantOpt.get();
+                    if (variant.getStock() < quantityToReduce) {
+                        throw new RuntimeException("Not enough stock for variant: " + variant.getSize());
+                    }
+                    variant.setStock(variant.getStock() - quantityToReduce);
+                    product.recalculateTotalStock();
+                    currentStock = variant.getStock();
+                } else {
+                    // ⚠️ Fallback: If variant missing in DB, deduct from main stock to prevent crash
+                    System.err.println("Warning: Variant '" + cartItem.getSize() + "' not found for product '" + product.getName() + "'. Deducting from main stock.");
+                    if (product.getStock() < quantityToReduce) {
+                        throw new RuntimeException("Not enough stock for product: " + product.getName());
+                    }
+                    product.setStock(product.getStock() - quantityToReduce);
+                    currentStock = product.getStock();
                 }
-
-                variant.setStock(variant.getStock() - quantityToReduce);
-                product.recalculateTotalStock();
-                currentVariantStock = variant.getStock();
-                currentVariantMinStock = variant.getMinStock();
-
             } else {
                 if (product.getStock() < quantityToReduce) {
                     throw new RuntimeException("Not enough stock for product: " + product.getName());
                 }
                 product.setStock(product.getStock() - quantityToReduce);
-                currentVariantStock = product.getStock();
+                currentStock = product.getStock();
             }
 
             productRepository.save(product);
 
-            String logProductId = product.getId() + (isVariant ? " (" + cartItem.getSize() + ")" : "");
-
+            // Log Inventory Movement
             InventoryLog log = new InventoryLog(
                     product.getId(),
                     "SALE" + (isVariant ? " - " + cartItem.getSize() : ""),
                     -quantityToReduce,
-                    currentVariantStock
+                    currentStock
             );
             inventoryLogRepository.save(log);
 
-            if (currentVariantStock <= currentVariantMinStock) {
-                createLowStockNotification(product, isVariant ? cartItem.getSize() : null);
-            }
-
+            // 🟢 IMAGE SNAPSHOT LOGIC
             String productImage = (product.getImages() != null && !product.getImages().isEmpty())
                     ? product.getImages().get(0)
                     : null;
@@ -134,25 +139,24 @@ public class OrderService {
                     product.getName() + (isVariant ? " (" + cartItem.getSize() + ")" : ""),
                     cartItem.getQuantity(),
                     cartItem.getPrice(),
-                    productImage // <--- Add product image
+                    productImage // <--- Saves Image!
             );
             orderItems.add(orderItem);
         }
 
         Order newOrder = new Order();
-
         newOrder.setUserId(userId);
+        newOrder.setUserEmail(userEmail); // <--- Saves Email!
         newOrder.setItems(orderItems);
-        newOrder.setTotalAmount(cart.getTotalPrice());
+        newOrder.setTotalAmount(totalAmount);
+        newOrder.setDiscountAmount(discountAmount);
+        newOrder.setPromoCodeUsed(promoCode);
         newOrder.setShippingAddress(shippingAddress);
         newOrder.setStatus("CONFIRMED");
         newOrder.setPaymentStatus("PAID");
         newOrder.setOrderNumber("ORD-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase());
-
-        newOrder.setTotalAmount(totalAmount);
-        newOrder.setDiscountAmount(discountAmount);
-        newOrder.setPromoCodeUsed(promoCode);
         newOrder.setEstimatedDelivery(LocalDate.now().plusDays(5));
+        newOrder.setCreatedAt(LocalDateTime.now()); // <--- Uses LocalDateTime!
 
         Order savedOrder = orderRepository.save(newOrder);
 
@@ -166,12 +170,7 @@ public class OrderService {
 
         for (User admin : admins) {
             String itemName = product.getName() + (variantSize != null ? " (" + variantSize + ")" : "");
-
-            int currentStock = (variantSize != null)
-                    ? product.getVariantBySize(variantSize).map(ProductVariant::getStock).orElse(0)
-                    : product.getStock();
-
-            String message = "⚠️ Low Stock Alert: " + itemName + " is down to " + currentStock + " units.";
+            String message = "⚠️ Low Stock Alert: " + itemName + " is running low.";
 
             notificationService.createNotification(
                     admin.getId().toString(),
@@ -185,7 +184,9 @@ public class OrderService {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new RuntimeException("Order not found"));
 
+        // 🟢 FIX: Added "PENDING" to valid statuses
         List<String> validStatuses = List.of("PENDING", "CONFIRMED", "SHIPPED", "DELIVERED", "CANCELLED");
+
         if (!validStatuses.contains(newStatus)) {
             throw new RuntimeException("Invalid status: " + newStatus);
         }
@@ -197,16 +198,14 @@ public class OrderService {
 
         if (!oldStatus.equals(newStatus)) {
             String message = "";
-
             if ("SHIPPED".equals(newStatus)) {
-                message = "Your order #" + order.getOrderNumber() + " has been shipped! It will arrive soon.";
+                message = "Your order #" + order.getOrderNumber() + " has been shipped!";
             } else if ("DELIVERED".equals(newStatus)) {
-                message = "Your order #" + order.getOrderNumber() + " has been delivered. Enjoy your scent!";
+                message = "Your order #" + order.getOrderNumber() + " has been delivered.";
             } else if ("CANCELLED".equals(newStatus)) {
-                message = "Your order #" + order.getOrderNumber() + " has been cancelled. Contact support for more details.";
+                message = "Your order #" + order.getOrderNumber() + " has been cancelled.";
             }
 
-            // Only create notification if we have a message for this status change
             if (!message.isEmpty()) {
                 notificationService.createNotification(
                         order.getUserId(),
@@ -215,29 +214,25 @@ public class OrderService {
                 );
             }
         }
-
         return updatedOrder;
     }
 
     public List<BillingResponse> getBillingRecords() {
         List<Order> orders = orderRepository.findAll();
-
         return orders.stream().map(order -> {
             String email = "Unknown";
-
             if (order.getUserId() != null) {
                 email = userRepository.findById(new ObjectId(order.getUserId()))
                         .map(User::getEmail)
                         .orElse("Deleted User");
             }
-
             return BillingResponse.builder()
                     .orderId(order.getId().toString())
                     .orderNumber(order.getOrderNumber())
                     .customerEmail(email)
                     .totalAmount(BigDecimal.valueOf(order.getTotalAmount()))
-                    .paymentStatus(order.getPaymentStatus()) // Ensure Order model has this (default "PAID")
-                    .date(order.getCreatedAt()) // Assuming Order uses LocalDateTime
+                    .paymentStatus(order.getPaymentStatus())
+                    .date(order.getCreatedAt())
                     .build();
         }).collect(Collectors.toList());
     }
@@ -245,16 +240,13 @@ public class OrderService {
     public DashboardStatsResponse getDashboardStats() {
         List<Order> allOrders = orderRepository.findAll();
 
-        // 1. Total Sales (Sum of totalAmount for non-cancelled orders)
         double totalSales = allOrders.stream()
                 .filter(o -> !"CANCELLED".equalsIgnoreCase(o.getStatus()))
                 .mapToDouble(Order::getTotalAmount)
                 .sum();
 
-        // 2. Total Orders
         long totalOrders = allOrders.size();
 
-        // 3. Pending & Canceled Counts
         long pendingCount = allOrders.stream()
                 .filter(o -> "PENDING".equalsIgnoreCase(o.getStatus()) || "CONFIRMED".equalsIgnoreCase(o.getStatus()))
                 .count();
@@ -272,7 +264,6 @@ public class OrderService {
 
     public Page<Order> getAllOrders(int page, int size, String search) {
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
-
         Page<Order> orders;
 
         if (search != null && !search.isEmpty()) {
@@ -287,11 +278,9 @@ public class OrderService {
                     userRepository.findById(new ObjectId(order.getUserId())).ifPresent(user -> {
                         order.setUserEmail(user.getEmail());
                     });
-                } catch (Exception e) {
-                }
+                } catch (Exception e) {}
             }
         });
-
         return orders;
     }
 
@@ -305,5 +294,9 @@ public class OrderService {
 
     public Order saveOrder(Order order) {
         return orderRepository.save(order);
+    }
+
+    public Order getOrderById(String id) {
+        return orderRepository.findById(id).orElseThrow(() -> new RuntimeException("Order not found"));
     }
 }

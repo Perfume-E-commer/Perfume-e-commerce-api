@@ -38,8 +38,11 @@ public class OrderController {
     @PreAuthorize("hasRole('USER') or hasRole('CUSTOMER') or hasRole('ADMIN')")
     public ResponseEntity<Order> placeOrder(@Valid @RequestBody PlaceOrderRequest request) {
         String userId = getCurrentUserId();
+        String userEmail = getCurrentUserEmail();
+
         Order order = orderService.placeOrder(
                 userId,
+                userEmail,
                 request.getShippingAddress(),
                 request.getPromoCode()
         );
@@ -62,4 +65,11 @@ public class OrderController {
     ) {
         return ResponseEntity.ok(orderService.getAllOrders(page, size, search));
     }
+
+    private String getCurrentUserEmail() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        UserDetails userDetails = (UserDetails) authentication.getPrincipal();
+        return userDetails.getUsername();
+    }
+
 }
