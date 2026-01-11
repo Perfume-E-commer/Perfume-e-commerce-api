@@ -9,6 +9,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/promotions")
@@ -33,9 +34,13 @@ public class PromotionController {
         return ResponseEntity.ok(promotionService.getAllPromotions(page, size, search));
     }
 
-    // Public/User: Validate
-    @GetMapping("/validate")
-    public ResponseEntity<?> validatePromotion(@RequestParam String code) {
+    @PostMapping("/validate")
+    public ResponseEntity<?> validatePromotion(@RequestBody Map<String, String> request) {
+        String code = request.get("code");
+        if (code == null || code.isEmpty()) {
+            return ResponseEntity.badRequest().body("Promo code is required");
+        }
+
         try {
             Promotion promo = promotionService.validatePromotion(code);
             return ResponseEntity.ok(promo);
