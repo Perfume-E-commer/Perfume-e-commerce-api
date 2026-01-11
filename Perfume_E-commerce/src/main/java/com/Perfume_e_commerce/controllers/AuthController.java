@@ -1,5 +1,6 @@
 package com.Perfume_e_commerce.controllers;
 
+import com.Perfume_e_commerce.Repositories.UserRepository;
 import com.Perfume_e_commerce.dto.AuthResponse;
 import com.Perfume_e_commerce.dto.LoginRequest;
 import com.Perfume_e_commerce.dto.RegisterRequest;
@@ -22,6 +23,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -46,6 +48,10 @@ public class AuthController {
 
     @Autowired
     private EmailService emailService;
+
+    @Autowired
+    private UserRepository userRepository;
+
 
     @PostMapping("/register")
     public ResponseEntity<?> registerUser(@Valid @RequestBody RegisterRequest registerRequest) {
@@ -148,5 +154,48 @@ public class AuthController {
                 .collect(Collectors.toList());
 
         return ResponseEntity.ok(new AuthResponse(jwtToken, userDetails.getUsername(), roles.get(0)));
+    }
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<?> forgotPassword(@RequestBody Map<String, String> request) {
+        String email = request.get("email");
+        if (email == null || email.isEmpty()) {
+            return ResponseEntity.badRequest().body("Email is required");
+        }
+
+        if (!userRepository.existsByEmail(email)) {
+            return ResponseEntity.badRequest().body("User with this email does not exist");
+        }
+
+        VerificationCode codeObj = verificationCodeService.createVerificationCode(email);
+        String code = codeObj.getCode(); // Extract the string code
+
+        emailService.sendPasswordResetEmail(email, code);
+
+        return ResponseEntity.ok("Password reset code sent to your email");
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<?> resetPassword(@RequestBody Map<String, String> request) {
+        String email = request.get("email");
+        String code = request.get("code");
+        String newPassword = request.get("newPassword");
+
+        if (email == null || code == null || newPassword == null) {
+            return ResponseEntity.badRequest().body("Email, code, and new password are required");
+        }
+
+        if (!verificationCodeService.verifyCode(email, code)) {
+            return ResponseEntity.badRequest().body("Invalid or expired verification code");
+        }
+
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        user.setPasswordHash(passwordEncoder.encode(newPassword));
+
+        userRepository.save(user);
+
+        return ResponseEntity.ok("Password has been successfully reset");
     }
 }
