@@ -24,6 +24,5 @@ public interface UserRepository extends MongoRepository<User, ObjectId> {
             "] }")
     Page<User> searchUsers(String keyword, Pageable pageable);
 
-    @Query("SELECT COUNT(u) FROM User u WHERE u.createdAt >= :startDate")
-    long countNewUsersAfter(@Param("startDate") LocalDateTime startDate);
+    long countByCreatedAtAfter(LocalDateTime date);
 }
