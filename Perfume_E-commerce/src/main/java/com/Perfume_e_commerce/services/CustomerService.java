@@ -37,7 +37,7 @@ public class CustomerService {
         Page<User> userPage = userRepository.findAll(pageable);
 
         List<String> userIds = userPage.getContent().stream()
-                .map(User::getId)
+                .map(user -> user.getId().toString())
                 .collect(Collectors.toList());
 
         List<Order> ordersForPage = orderRepository.findAll().stream()
@@ -47,8 +47,8 @@ public class CustomerService {
         Map<String, List<Order>> ordersByUser = ordersForPage.stream()
                 .collect(Collectors.groupingBy(Order::getUserId));
 
-        // 5. Build the Response DTOs
         List<CustomerListItemResponse> content = userPage.getContent().stream().map(user -> {
+            String uid = user.getId().toString();
             List<Order> userOrders = ordersByUser.getOrDefault(user.getId(), Collections.emptyList());
 
             long orderCount = userOrders.size();
@@ -59,7 +59,6 @@ public class CustomerService {
                     .mapToDouble(BigDecimal::doubleValue)
                     .sum();
 
-            // Find max date
             String lastActive = userOrders.stream()
                     .map(Order::getCreatedAt)
                     .filter(Objects::nonNull)
@@ -68,7 +67,7 @@ public class CustomerService {
                     .orElse(null);
 
             return new CustomerListItemResponse(
-                    user.getId(),
+                    uid,
                     user.getFirstName(),
                     user.getLastName(),
                     user.getEmail(),
