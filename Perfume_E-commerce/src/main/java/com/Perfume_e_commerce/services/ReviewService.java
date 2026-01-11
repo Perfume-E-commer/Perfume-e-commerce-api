@@ -8,6 +8,7 @@ import com.Perfume_e_commerce.models.order.Order;
 import com.Perfume_e_commerce.models.product.Product;
 import com.Perfume_e_commerce.models.product.Review;
 import com.Perfume_e_commerce.models.user.User;
+import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -29,13 +30,10 @@ public class ReviewService {
     }
 
     public Review addReview(String userId, String productId, int rating, String comment) {
-        // 1. Prevent duplicate reviews
         if (reviewRepository.existsByUserIdAndProductId(userId, productId)) {
             throw new RuntimeException("You have already reviewed this product.");
         }
 
-        // 2. Verified Purchase Check
-        // Find orders by this user that contain this product ID
         List<Order> userOrders = orderRepository.findByUserId(userId);
         boolean hasPurchased = userOrders.stream()
                 .anyMatch(order -> order.getItems().stream()
@@ -45,17 +43,27 @@ public class ReviewService {
             throw new RuntimeException("Verified Purchase Required: You must buy this product before reviewing it.");
         }
 
-        User user = userRepository.findById(userId).orElseThrow(() -> new RuntimeException("User not found"));
+        User user = userRepository.findById(new ObjectId(userId))
+                .orElseThrow(() -> new RuntimeException("User not found"));
 
         Review review = new Review();
         review.setUserId(userId);
-        review.setUserName(user.getFullName() != null ? user.getFullName() : user.getEmail());
+
+        String displayName = "Customer";
+        if (user.getFirstName() != null) {
+            displayName = user.getFirstName() + (user.getLastName() != null ? " " + user.getLastName() : "");
+        } else {
+            displayName = user.getEmail();
+        }
+        review.setUserName(displayName);
+
         review.setProductId(productId);
         review.setRating(rating);
         review.setComment(comment);
 
         Review savedReview = reviewRepository.save(review);
 
+        // 4. Update Product Average Rating
         updateProductRating(productId);
 
         return savedReview;
@@ -66,13 +74,11 @@ public class ReviewService {
         double average = reviews.stream().mapToInt(Review::getRating).average().orElse(0.0);
         int count = reviews.size();
 
-        Product product = productRepository.findById(productId).orElse(null);
+        Product product = productRepository.findById(new ObjectId(productId)).orElse(null);
+
         if (product != null) {
-            if (product.getRating() == null) {
-                product.setRating(new com.Perfume_e_commerce.models.product.Rating());
-            }
-            product.getRating().setAverageRating(average);
-            product.getRating().setTotalReviews(count);
+            product.setAverageRating(average);
+            product.setTotalReviews(count);
             productRepository.save(product);
         }
     }
