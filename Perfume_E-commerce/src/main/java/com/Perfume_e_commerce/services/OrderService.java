@@ -125,11 +125,16 @@ public class OrderService {
                 createLowStockNotification(product, isVariant ? cartItem.getSize() : null);
             }
 
+            String productImage = (product.getImages() != null && !product.getImages().isEmpty())
+                    ? product.getImages().get(0)
+                    : null;
+
             OrderItem orderItem = new OrderItem(
                     cartItem.getProductId(),
                     product.getName() + (isVariant ? " (" + cartItem.getSize() + ")" : ""),
                     cartItem.getQuantity(),
-                    cartItem.getPrice()
+                    cartItem.getPrice(),
+                    productImage // <--- Add product image
             );
             orderItems.add(orderItem);
         }
@@ -180,7 +185,7 @@ public class OrderService {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new RuntimeException("Order not found"));
 
-        List<String> validStatuses = List.of("CONFIRMED", "SHIPPED", "DELIVERED", "CANCELLED");
+        List<String> validStatuses = List.of("PENDING", "CONFIRMED", "SHIPPED", "DELIVERED", "CANCELLED");
         if (!validStatuses.contains(newStatus)) {
             throw new RuntimeException("Invalid status: " + newStatus);
         }

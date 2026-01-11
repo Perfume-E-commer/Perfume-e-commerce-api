@@ -12,4 +12,12 @@ public class OrderItem {
     private String productName;
     private int quantity;
     private double price;
+    private String image;
+
+    public OrderItem(String productId, String productName, Integer quantity, Double price) {
+        this.productId = productId;
+        this.productName = productName;
+        this.quantity = quantity;
+        this.price = price;
+    }
 }
