@@ -44,7 +44,8 @@ public class OrderController {
                 userId,
                 userEmail,
                 request.getShippingAddress(),
-                request.getPromoCode()
+                request.getPromoCode(),
+                request.getSelectedProductIds()
         );
         return ResponseEntity.ok(order);
     }
