@@ -63,14 +63,28 @@ public class OrderService {
     private NotificationService notificationService;
 
     @Transactional
-    public Order placeOrder(String userId, String userEmail, Address shippingAddress, String promoCode) {
+    public Order placeOrder(String userId, String userEmail, Address shippingAddress, String promoCode, List<String> selectedProductIds) {
 
         Cart cart = cartService.getCartByUserId(userId);
         if (cart == null || cart.getItems().isEmpty()) {
             throw new RuntimeException("Cart is empty. Cannot place order.");
         }
 
-        double totalAmount = cart.getTotalPrice();
+        List<CartItem> itemsToProcess = cart.getItems();
+
+        if (selectedProductIds != null && !selectedProductIds.isEmpty()) {
+            itemsToProcess = cart.getItems().stream()
+                    .filter(item -> selectedProductIds.contains(item.getProductId()))
+                    .collect(Collectors.toList());
+
+            if (itemsToProcess.isEmpty()) {
+                throw new RuntimeException("No valid items selected for checkout.");
+            }
+        }
+
+        double totalAmount = itemsToProcess.stream()
+                .mapToDouble(item -> item.getPrice() * item.getQuantity())
+                .sum();
         double discountAmount = 0.0;
 
         if (promoCode != null && !promoCode.isEmpty()) {
@@ -160,7 +174,9 @@ public class OrderService {
 
         Order savedOrder = orderRepository.save(newOrder);
 
-        cartService.clearCart(userId);
+        if (selectedProductIds == null || selectedProductIds.isEmpty()) {
+            cartService.clearCart(userId);
+        } else {}
 
         return savedOrder;
     }
