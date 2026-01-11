@@ -101,7 +101,7 @@ public class OrderService {
         }
 
         List<OrderItem> orderItems = new ArrayList<>();
-        for (CartItem cartItem : cart.getItems()) {
+        for (CartItem cartItem : itemsToProcess) {
             Product product = productRepository.findById(new ObjectId(cartItem.getProductId()))
                     .orElseThrow(() -> new RuntimeException("Product not found: " + cartItem.getProductId()));
 
