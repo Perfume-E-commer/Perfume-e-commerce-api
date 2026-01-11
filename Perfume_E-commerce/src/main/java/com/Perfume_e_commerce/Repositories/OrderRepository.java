@@ -13,8 +13,11 @@ public interface OrderRepository extends MongoRepository<Order, String> {
 
     @Query("{ '$or': [ " +
             "{ 'orderNumber': { '$regex': ?0, '$options': 'i' } }, " +
-            "{ 'userEmail': { '$regex': ?0, '$options': 'i' } } " +
+            "{ 'userEmail': { '$regex': ?0, '$options': 'i' } }, " +
+            "{ 'shippingAddress.fullName': { '$regex': ?0, '$options': 'i' } } " +
             "] }")
+    Page<Order> searchOrders(String keyword, Pageable pageable);
+
     Page<Order> findByOrderNumberContainingIgnoreCase(String orderNumber, Pageable pageable);
 
     List<Order> findByUserEmail(String userEmail);
