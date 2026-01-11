@@ -2,6 +2,7 @@ package com.Perfume_e_commerce.services;
 
 import com.Perfume_e_commerce.Repositories.CartRepository;
 import com.Perfume_e_commerce.Repositories.ProductRepository;
+import com.Perfume_e_commerce.dto.PlaceOrderRequest;
 import com.Perfume_e_commerce.models.order.Cart;
 import com.Perfume_e_commerce.models.order.CartItem;
 import com.Perfume_e_commerce.models.product.Product;
@@ -90,10 +91,18 @@ public class CartService {
         return cartRepository.save(cart);
     }
 
-    public void removeItemsFromCart(String userId, List<String> productIdsToRemove) {
+    public void removeItemsFromCart(String userId, List<PlaceOrderRequest.OrderItemRequest> itemsToRemove) {
         Cart cart = getCartByUserId(userId);
         if (cart != null && cart.getItems() != null) {
-            cart.getItems().removeIf(item -> productIdsToRemove.contains(item.getProductId()));
+
+            cart.getItems().removeIf(cartItem -> itemsToRemove.stream().anyMatch(remove ->
+                    remove.getProductId().equals(cartItem.getProductId()) &&
+                            (
+                                    (remove.getSize() == null && cartItem.getSize() == null) ||
+                                            (remove.getSize() != null && remove.getSize().equals(cartItem.getSize()))
+                            )
+            ));
+
             cart.calculateTotal();
             cartRepository.save(cart);
         }

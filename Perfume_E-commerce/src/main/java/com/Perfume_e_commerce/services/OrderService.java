@@ -5,6 +5,7 @@ import com.Perfume_e_commerce.Repositories.NotificationRepository;
 import com.Perfume_e_commerce.Repositories.OrderRepository;
 import com.Perfume_e_commerce.Repositories.ProductRepository;
 import com.Perfume_e_commerce.Repositories.UserRepository;
+import com.Perfume_e_commerce.dto.PlaceOrderRequest;
 import com.Perfume_e_commerce.dto.response.BillingResponse;
 import com.Perfume_e_commerce.dto.response.DashboardStatsResponse;
 import com.Perfume_e_commerce.models.marketing.Promotion;
@@ -63,7 +64,7 @@ public class OrderService {
     private NotificationService notificationService;
 
     @Transactional
-    public Order placeOrder(String userId, String userEmail, Address shippingAddress, String promoCode, List<String> selectedProductIds) {
+    public Order placeOrder(String userId, String userEmail, Address shippingAddress, String promoCode, List<PlaceOrderRequest.OrderItemRequest> selectedItems) {
 
         Cart cart = cartService.getCartByUserId(userId);
         if (cart == null || cart.getItems().isEmpty()) {
@@ -72,9 +73,15 @@ public class OrderService {
 
         List<CartItem> itemsToProcess = cart.getItems();
 
-        if (selectedProductIds != null && !selectedProductIds.isEmpty()) {
+        if (selectedItems != null && !selectedItems.isEmpty()) {
             itemsToProcess = cart.getItems().stream()
-                    .filter(item -> selectedProductIds.contains(item.getProductId()))
+                    .filter(cartItem -> selectedItems.stream().anyMatch(selected ->
+                            selected.getProductId().equals(cartItem.getProductId()) &&
+                                    (
+                                            (selected.getSize() == null && cartItem.getSize() == null) ||
+                                                    (selected.getSize() != null && selected.getSize().equals(cartItem.getSize()))
+                                    )
+                    ))
                     .collect(Collectors.toList());
 
             if (itemsToProcess.isEmpty()) {
@@ -99,6 +106,12 @@ public class OrderService {
                     .orElseThrow(() -> new RuntimeException("Product not found: " + cartItem.getProductId()));
 
             int quantityToReduce = cartItem.getQuantity();
+
+            String finalImage = product.getImageUrl();
+            if (finalImage == null && product.getImages() != null && !product.getImages().isEmpty()) {
+                finalImage = product.getImages().get(0);
+            }
+
             int currentStock = 0;
             boolean isVariant = cartItem.getSize() != null && !cartItem.getSize().isEmpty();
 
@@ -115,6 +128,9 @@ public class OrderService {
                     variant.setStock(variant.getStock() - quantityToReduce);
                     product.recalculateTotalStock();
                     currentStock = variant.getStock();
+                    if (variant.getImageUrl() != null && !variant.getImageUrl().isEmpty()) {
+                        finalImage = variant.getImageUrl();
+                    }
                 } else {
                     // ⚠️ Fallback: If variant missing in DB, deduct from main stock to prevent crash
                     System.err.println("Warning: Variant '" + cartItem.getSize() + "' not found for product '" + product.getName() + "'. Deducting from main stock.");
@@ -153,7 +169,7 @@ public class OrderService {
                     product.getName() + (isVariant ? " (" + cartItem.getSize() + ")" : ""),
                     cartItem.getQuantity(),
                     cartItem.getPrice(),
-                    productImage // <--- Saves Image!
+                    finalImage
             );
             orderItems.add(orderItem);
         }
@@ -174,9 +190,11 @@ public class OrderService {
 
         Order savedOrder = orderRepository.save(newOrder);
 
-        if (selectedProductIds == null || selectedProductIds.isEmpty()) {
+        if (selectedItems == null || selectedItems.isEmpty()) {
             cartService.clearCart(userId);
-        } else {}
+        } else {
+            cartService.removeItemsFromCart(userId, selectedItems);
+        }
 
         return savedOrder;
     }
