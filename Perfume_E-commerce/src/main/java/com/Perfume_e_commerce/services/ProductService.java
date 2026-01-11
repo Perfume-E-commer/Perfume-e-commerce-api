@@ -163,4 +163,19 @@ public class ProductService {
 
         return productRepository.searchProducts(searchKey, finalCatRegex, min, max, pageable);
     }
+
+    public Page<Product> getAllProductsForAdmin(int page, int size, String search) {
+        Pageable pageable = PageRequest.of(page, size);
+
+        if (search != null && !search.isEmpty()) {
+            return productRepository.findByNameContainingIgnoreCase(search, pageable);
+        } else {
+            return productRepository.findAll(pageable);
+        }
+    }
+
+    public Page<Product> getProductsForCustomer(int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        return productRepository.findByActiveTrue(pageable);
+    }
 }
