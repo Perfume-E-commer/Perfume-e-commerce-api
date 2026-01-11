@@ -19,11 +19,18 @@ public class Promotion {
 
     private String description;
 
-    private int discountPercent;
+    private Double discountPercentage;
 
-    private Date validUntil;
+    private LocalDateTime validFrom;
 
-    private boolean isActive = true;
+    private LocalDateTime validUntil;
+    private Integer usageLimit;
+
+    private boolean active = true;
 
     private LocalDateTime createdAt = LocalDateTime.now();
+
+    public boolean isActive() {
+        return active;
+    }
 }

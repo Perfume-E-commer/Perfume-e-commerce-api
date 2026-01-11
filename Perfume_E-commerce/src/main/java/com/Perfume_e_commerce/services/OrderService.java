@@ -74,7 +74,7 @@ public class OrderService {
         if (promoCode != null && !promoCode.isEmpty()) {
             Promotion promo = promotionService.validatePromotion(promoCode);
 
-            discountAmount = totalAmount * (promo.getDiscountPercent() / 100.0);
+            discountAmount = totalAmount * (promo.getDiscountPercentage() / 100.0);
             totalAmount = totalAmount - discountAmount;
         }
 

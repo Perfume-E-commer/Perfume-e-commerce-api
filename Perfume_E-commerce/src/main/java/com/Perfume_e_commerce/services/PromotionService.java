@@ -7,9 +7,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
-
-import java.util.Date;
-import java.util.List;
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 @Service
@@ -18,7 +16,6 @@ public class PromotionService {
     private PromotionRepository promotionRepository;
 
     public Promotion createPromotion(Promotion promotion) {
-        // Ensure code is uppercase
         promotion.setCode(promotion.getCode().toUpperCase());
         return promotionRepository.save(promotion);
     }
@@ -44,8 +41,18 @@ public class PromotionService {
             throw new RuntimeException("Promo code is inactive");
         }
 
-        if (promo.getValidUntil().before(new Date())) {
+        LocalDateTime now = LocalDateTime.now();
+
+        if (promo.getValidFrom() != null && now.isBefore(promo.getValidFrom())) {
+            throw new RuntimeException("Promo code is not valid yet");
+        }
+
+        if (promo.getValidUntil() != null && now.isAfter(promo.getValidUntil())) {
             throw new RuntimeException("Promo code has expired");
+        }
+
+        if (promo.getUsageLimit() != null && promo.getUsageLimit() <= 0) {
+            throw new RuntimeException("Promo code usage limit reached");
         }
 
         return promo;
@@ -61,8 +68,14 @@ public class PromotionService {
                     if (updatedDetails.getDescription() != null) {
                         promo.setDescription(updatedDetails.getDescription());
                     }
-                    if (updatedDetails.getDiscountPercent() > 0) {
-                        promo.setDiscountPercent(updatedDetails.getDiscountPercent());
+                    if (updatedDetails.getDiscountPercentage() != null && updatedDetails.getDiscountPercentage() > 0) {
+                        promo.setDiscountPercentage(updatedDetails.getDiscountPercentage());
+                    }
+                    if (updatedDetails.getValidFrom() != null) {
+                        promo.setValidFrom(updatedDetails.getValidFrom());
+                    }
+                    if (updatedDetails.getDiscountPercentage() != null && updatedDetails.getDiscountPercentage() > 0) {
+                        promo.setDiscountPercentage(updatedDetails.getDiscountPercentage());
                     }
                     if (updatedDetails.getValidUntil() != null) {
                         promo.setValidUntil(updatedDetails.getValidUntil());
@@ -74,8 +87,6 @@ public class PromotionService {
     }
 
     public void deletePromotion(String id) {
-//        promotionRepository.deleteById(id);
-
         Promotion promo = promotionRepository.findById(id).orElseThrow();
         promo.setActive(false);
         promotionRepository.save(promo);
