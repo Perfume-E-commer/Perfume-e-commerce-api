@@ -97,7 +97,7 @@ public class Product {
     @Field("active")
     @Indexed
     @Builder.Default
-    private boolean isActive = true;
+    private boolean active = true;
 
     @Indexed
     @Builder.Default

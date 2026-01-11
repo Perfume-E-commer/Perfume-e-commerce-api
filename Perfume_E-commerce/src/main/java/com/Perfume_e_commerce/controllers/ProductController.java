@@ -47,12 +47,6 @@ public class ProductController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    @GetMapping("/admin-test")
-    @PreAuthorize("hasRole('ADMIN')")
-    public String adminTest() {
-        return "SUCCESS: You are an ADMIN!";
-    }
-
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> createProduct(@Valid @RequestBody CreateProductRequest request){
