@@ -26,7 +26,7 @@ public class FileController {
         String fileUrl = fileStorageService.storeFile(file);
 
         Map<String, String> response = new HashMap<>();
-        response.put("url", "http://localhost:8080" + fileUrl);
+        response.put("url", "https://rithserver.tail683264.ts.net:8443" + fileUrl);
         return ResponseEntity.ok(response);
     }
 
