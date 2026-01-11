@@ -35,6 +35,7 @@ public class OrderController {
     }
 
     @PostMapping
+    @PreAuthorize("hasRole('USER') or hasRole('CUSTOMER') or hasRole('ADMIN')")
     public ResponseEntity<Order> placeOrder(@Valid @RequestBody PlaceOrderRequest request) {
         String userId = getCurrentUserId();
         Order order = orderService.placeOrder(
@@ -46,6 +47,7 @@ public class OrderController {
     }
 
     @GetMapping("/my-orders")
+    @PreAuthorize("hasRole('USER') or hasRole('CUSTOMER') or hasRole('ADMIN')")
     public ResponseEntity<List<Order>> getMyOrders() {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
         return ResponseEntity.ok(orderService.getOrdersByUser(email));
