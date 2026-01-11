@@ -35,9 +35,12 @@ public class AdminController {
     }
 
     @GetMapping("/orders")
-    public ResponseEntity<List<Order>> getAllOrders() {
-        List<Order> orders = orderService.getAllOrders();
-        return ResponseEntity.ok(orders);
+    public ResponseEntity<Page<Order>> getAllOrders(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) String search
+    ) {
+        return ResponseEntity.ok(orderService.getAllOrders(page, size, search));
     }
 
     @GetMapping("/dashboard-stats")

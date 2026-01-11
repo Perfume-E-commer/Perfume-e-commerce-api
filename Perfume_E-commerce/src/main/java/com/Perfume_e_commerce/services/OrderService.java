@@ -271,7 +271,7 @@ public class OrderService {
         Page<Order> orders;
 
         if (search != null && !search.isEmpty()) {
-            orders = orderRepository.findByOrderNumberContainingIgnoreCase(search, pageable);
+            orders = orderRepository.searchOrders(search, pageable);
         } else {
             orders = orderRepository.findAll(pageable);
         }
