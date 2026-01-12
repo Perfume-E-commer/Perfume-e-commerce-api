@@ -93,22 +93,6 @@ public class AdminController {
         return ResponseEntity.ok(orderService.getBillingRecords());
     }
 
-    @GetMapping("/profile")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<UserProfileResponse> getAdminProfile(@AuthenticationPrincipal UserDetails userDetails) {
-        User user = userRepository.findByEmail(userDetails.getUsername())
-                .orElseThrow(() -> new RuntimeException("Admin not found"));
-
-        return ResponseEntity.ok(new UserProfileResponse(
-                user.getId().toString(),
-                user.getFirstName(),
-                user.getLastName(),
-                user.getEmail(),
-                user.getRole(),
-                null // You can map avatarUrl here if you add it to your User model later
-        ));
-    }
-
     @PutMapping("/profile")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<UserProfileResponse> updateAdminProfile(
@@ -182,5 +166,38 @@ public class AdminController {
         User savedUser = userRepository.save(admin);
 
         return ResponseEntity.ok(savedUser);
+    }
+
+    @GetMapping("/profile")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<UserProfileResponse> getAdminProfile(@AuthenticationPrincipal UserDetailsImpl userDetails) {
+        ObjectId userId = new ObjectId(userDetails.getId());
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("Admin not found"));
+
+        String street = "";
+        String city = "";
+        String zipCode = "";
+
+        if (user.getAddresses() != null && !user.getAddresses().isEmpty()) {
+            Address address = user.getAddresses().get(0); // Get the first address
+            street = address.getStreet();
+            city = address.getCity();
+            zipCode = address.getZipCode();
+        }
+
+        UserProfileResponse response = new UserProfileResponse(
+                user.getId().toHexString(),
+                user.getFirstName(),
+                user.getLastName(),
+                user.getEmail(),
+                user.getRole(),
+                user.getImageUrl(),
+                street,
+                city,
+                zipCode
+        );
+
+        return ResponseEntity.ok(response);
     }
 }
