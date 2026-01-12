@@ -10,8 +10,9 @@ import com.Perfume_e_commerce.models.product.Product;
 import com.Perfume_e_commerce.models.marketing.Promotion;
 import com.Perfume_e_commerce.models.user.User;
 import lombok.RequiredArgsConstructor;
-import org.bson.types.ObjectId; // Ensure ObjectId is available if needed
+import org.bson.types.ObjectId;
 import org.springframework.stereotype.Service;
+import com.Perfume_e_commerce.dto.response.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -54,8 +55,14 @@ public class DashboardService {
                 .filter(p -> p.getStock() <= 5)
                 .count();
 
-        Map<LocalDate, AdminDashboardResponse.DailySalesData> chartMap = new TreeMap<>();
+        Map<LocalDate, DailySalesData> chartMap = new TreeMap<>();
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MMM dd");
+
+        for (int i = 0; i < 30; i++) {
+            LocalDate date = LocalDate.now().minusDays(i);
+            // Create empty data point
+            chartMap.put(date, new DailySalesData(date.format(formatter), 0.0, 0));
+        }
 
         for (Order order : recentOrdersList) {
             if (order.getCreatedAt() == null) continue;
@@ -63,25 +70,25 @@ public class DashboardService {
             LocalDate date = order.getCreatedAt().toLocalDate();
 
             if (chartMap.containsKey(date)) {
-                AdminDashboardResponse.DailySalesData data = chartMap.get(date);
+                DailySalesData data = chartMap.get(date);
                 double amount = order.getTotalAmount();
                 data.setRevenue(data.getRevenue() + amount);
                 data.setOrderCount(data.getOrderCount() + 1);
             }
         }
-        List<AdminDashboardResponse.DailySalesData> salesChart = new ArrayList<>(chartMap.values());
+        List<DailySalesData> salesChart = new ArrayList<>(chartMap.values());
         Collections.sort(salesChart, Comparator.comparing(d -> LocalDate.parse(d.getDate() + " " + LocalDate.now().getYear(), DateTimeFormatter.ofPattern("MMM dd yyyy"))));
 
-        List<AdminDashboardResponse.RecentOrder> recentOrders = allOrders.stream()
+        List<RecentOrder> recentOrders = allOrders.stream()
                 .sorted(Comparator.comparing(Order::getCreatedAt, Comparator.nullsLast(Comparator.reverseOrder())))
                 .limit(5)
                 .map(this::mapToRecentOrder)
                 .collect(Collectors.toList());
 
-        List<AdminDashboardResponse.LowStockItem> lowStockItems = allProducts.stream()
+        List<LowStockItem> lowStockItems = allProducts.stream()
                 .filter(p -> p.getStock() <= 5)
                 .limit(5)
-                .map(p -> new AdminDashboardResponse.LowStockItem(
+                .map(p -> new LowStockItem(
                         p.getId(),
                         p.getName(),
                         p.getStock(),
@@ -90,10 +97,10 @@ public class DashboardService {
                 .collect(Collectors.toList());
 
         List<Promotion> allPromos = promotionRepository.findAll();
-        List<AdminDashboardResponse.ActivePromotion> activePromotions = allPromos.stream()
+        List<ActivePromotion> activePromotions = allPromos.stream()
                 .filter(p -> p.isActive())
                 .limit(5)
-                .map(p -> new AdminDashboardResponse.ActivePromotion(
+                .map(p -> new ActivePromotion(
                         p.getId(),
                         p.getCode(),
                         p.getDiscountPercentage(),
@@ -113,7 +120,7 @@ public class DashboardService {
         );
     }
 
-    private AdminDashboardResponse.RecentOrder mapToRecentOrder(Order order) {
+    private RecentOrder mapToRecentOrder(Order order) {
         String customerName = "Guest";
         try {
             if (order.getUserId() != null) {
@@ -129,11 +136,11 @@ public class DashboardService {
             customerName = "Unknown";
         }
 
-        return new AdminDashboardResponse.RecentOrder(
+        return new RecentOrder(
                 order.getId(),
                 order.getId(), // Or order.getOrderNumber() if available
                 customerName,
-                order.getTotal() != null ? order.getTotal().doubleValue() : 0.0,
+                order.getTotalAmount(),
                 order.getStatus(),
                 order.getCreatedAt() != null ? order.getCreatedAt().toString() : ""
         );
