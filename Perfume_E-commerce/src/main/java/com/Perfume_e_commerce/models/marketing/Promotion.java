@@ -15,15 +15,22 @@ public class Promotion {
     private String id;
 
     @Indexed(unique = true)
-    private String code; // e.g., "SUMMER10"
+    private String code;
 
     private String description;
 
-    private int discountPercent; // e.g., 10 for 10%
+    private Double discountPercentage;
 
-    private Date validUntil;
+    private LocalDateTime validFrom;
 
-    private boolean isActive = true;
+    private LocalDateTime validUntil;
+    private Integer usageLimit;
+
+    private boolean active = true;
 
     private LocalDateTime createdAt = LocalDateTime.now();
+
+    public boolean isActive() {
+        return active;
+    }
 }

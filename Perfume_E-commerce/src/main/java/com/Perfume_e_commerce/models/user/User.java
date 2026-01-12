@@ -37,6 +37,7 @@ public class User {
     @Pattern(regexp = "^(USER|ADMIN)$", message = "Role must be USER or ADMIN")
     private String role;
 
+    @Builder.Default
     private boolean isVerified = false;
 
     private String phoneNumber;

@@ -9,6 +9,7 @@ import org.bson.types.ObjectId;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.data.mongodb.core.mapping.Field;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -48,8 +49,10 @@ public class Product {
 
     @Min(value = 0, message = "Stock cannot be negative")
     @Indexed
+    @Builder.Default
     private int stock = 0;
 
+    @Builder.Default
     private int orders = 0;
 
     @NotBlank
@@ -62,10 +65,16 @@ public class Product {
     @Builder.Default
     private List<String> images = new ArrayList<>();
 
+    @Builder.Default
     private boolean taxIncluded = false;
+
+    @Builder.Default
     private boolean isOnSale = false;
 
+    @Builder.Default
     private Double averageRating = 0.0;
+
+    @Builder.Default
     private int totalReviews = 0;
 
     @Builder.Default
@@ -82,12 +91,16 @@ public class Product {
     @Builder.Default
     private List<ScentNote> scentNotes = new ArrayList<>();
 
+    @Builder.Default
     private int minStockLevel = 5;
 
+    @Field("active")
     @Indexed
-    private boolean isActive = true;
+    @Builder.Default
+    private boolean active = true;
 
     @Indexed
+    @Builder.Default
     private boolean isFeatured = false;
 
     @Builder.Default

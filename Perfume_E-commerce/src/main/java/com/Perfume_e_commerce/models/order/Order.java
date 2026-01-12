@@ -21,6 +21,8 @@ public class Order {
 
     private String orderNumber; // e.g., "ORD-123456"
 
+    private String userEmail;
+
     private String promoCodeUsed; // e.g., "SUMMER10"
 
     private double discountAmount;

@@ -2,6 +2,7 @@ package com.Perfume_e_commerce.services;
 
 import com.Perfume_e_commerce.Repositories.CartRepository;
 import com.Perfume_e_commerce.Repositories.ProductRepository;
+import com.Perfume_e_commerce.dto.PlaceOrderRequest;
 import com.Perfume_e_commerce.models.order.Cart;
 import com.Perfume_e_commerce.models.order.CartItem;
 import com.Perfume_e_commerce.models.product.Product;
@@ -9,6 +10,7 @@ import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -34,7 +36,19 @@ public class CartService {
                 .orElseThrow(() -> new RuntimeException("Product not found"));
 
         double finalPrice = product.getPrice().doubleValue();
-        String finalImageUrl = product.getImageUrl(); // Default to main image
+        String finalImageUrl = product.getImageUrl();
+
+        if (size != null && !size.isEmpty()) {
+            boolean variantExists = false;
+            if (product.getVariants() != null) {
+                variantExists = product.getVariants().stream()
+                        .anyMatch(v -> v.getSize().equalsIgnoreCase(size));
+            }
+
+            if (!variantExists) {
+                throw new RuntimeException("Variant '" + size + "' does not exist for this product.");
+            }
+        }
 
         if (size != null && !size.isEmpty() && product.getVariants() != null) {
             var variantOpt = product.getVariants().stream()
@@ -45,14 +59,13 @@ public class CartService {
                 var variant = variantOpt.get();
                 finalPrice = variant.getPrice().doubleValue();
 
-                // ✅ Fix: Use variant image if available, otherwise keep main image
                 if (variant.getImageUrl() != null && !variant.getImageUrl().isEmpty()) {
                     finalImageUrl = variant.getImageUrl();
                 }
             }
         }
 
-        String targetImageUrl = finalImageUrl; // Variable for lambda use
+        String targetImageUrl = finalImageUrl;
 
         Optional<CartItem> existingItem = cart.getItems().stream()
                 .filter(item -> item.getProductId().equals(productId)
@@ -76,6 +89,23 @@ public class CartService {
 
         cart.calculateTotal();
         return cartRepository.save(cart);
+    }
+
+    public void removeItemsFromCart(String userId, List<PlaceOrderRequest.OrderItemRequest> itemsToRemove) {
+        Cart cart = getCartByUserId(userId);
+        if (cart != null && cart.getItems() != null) {
+
+            cart.getItems().removeIf(cartItem -> itemsToRemove.stream().anyMatch(remove ->
+                    remove.getProductId().equals(cartItem.getProductId()) &&
+                            (
+                                    (remove.getSize() == null && cartItem.getSize() == null) ||
+                                            (remove.getSize() != null && remove.getSize().equals(cartItem.getSize()))
+                            )
+            ));
+
+            cart.calculateTotal();
+            cartRepository.save(cart);
+        }
     }
 
     public Cart removeFromCart(String userId, String productId, String size) {

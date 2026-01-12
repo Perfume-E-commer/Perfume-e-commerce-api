@@ -20,5 +20,7 @@ public class Address {
     @NotBlank
     private String zipCode;
     private String phoneNumber;
+
+    @Builder.Default
     private String type = "HOME";
 }

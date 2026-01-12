@@ -5,8 +5,9 @@ import com.Perfume_e_commerce.Repositories.NotificationRepository;
 import com.Perfume_e_commerce.Repositories.OrderRepository;
 import com.Perfume_e_commerce.Repositories.ProductRepository;
 import com.Perfume_e_commerce.Repositories.UserRepository;
+import com.Perfume_e_commerce.dto.PlaceOrderRequest;
 import com.Perfume_e_commerce.dto.response.BillingResponse;
-import com.Perfume_e_commerce.models.marketing.Notification;
+import com.Perfume_e_commerce.dto.response.DashboardStatsResponse;
 import com.Perfume_e_commerce.models.marketing.Promotion;
 import com.Perfume_e_commerce.models.order.Cart;
 import com.Perfume_e_commerce.models.order.CartItem;
@@ -19,11 +20,19 @@ import com.Perfume_e_commerce.models.user.Address;
 import com.Perfume_e_commerce.models.user.User;
 import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.math.BigDecimal;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -55,97 +64,137 @@ public class OrderService {
     private NotificationService notificationService;
 
     @Transactional
-    public Order placeOrder(String userId, Address shippingAddress, String promoCode) {
+    public Order placeOrder(String userId, String userEmail, Address shippingAddress, String promoCode, List<PlaceOrderRequest.OrderItemRequest> selectedItems) {
 
         Cart cart = cartService.getCartByUserId(userId);
-        if (cart.getItems().isEmpty()) {
+        if (cart == null || cart.getItems().isEmpty()) {
             throw new RuntimeException("Cart is empty. Cannot place order.");
         }
 
-        double totalAmount = cart.getTotalPrice();
+        List<CartItem> itemsToProcess = cart.getItems();
+
+        if (selectedItems != null && !selectedItems.isEmpty()) {
+            itemsToProcess = cart.getItems().stream()
+                    .filter(cartItem -> selectedItems.stream().anyMatch(selected ->
+                            selected.getProductId().equals(cartItem.getProductId()) &&
+                                    (
+                                            (selected.getSize() == null && cartItem.getSize() == null) ||
+                                                    (selected.getSize() != null && selected.getSize().equals(cartItem.getSize()))
+                                    )
+                    ))
+                    .collect(Collectors.toList());
+
+            if (itemsToProcess.isEmpty()) {
+                throw new RuntimeException("No valid items selected for checkout.");
+            }
+        }
+
+        double totalAmount = itemsToProcess.stream()
+                .mapToDouble(item -> item.getPrice() * item.getQuantity())
+                .sum();
         double discountAmount = 0.0;
 
         if (promoCode != null && !promoCode.isEmpty()) {
             Promotion promo = promotionService.validatePromotion(promoCode);
-
-            discountAmount = totalAmount * (promo.getDiscountPercent() / 100.0);
+            discountAmount = totalAmount * (promo.getDiscountPercentage() / 100.0);
             totalAmount = totalAmount - discountAmount;
         }
 
         List<OrderItem> orderItems = new ArrayList<>();
-        for (CartItem cartItem : cart.getItems()) {
+        for (CartItem cartItem : itemsToProcess) {
             Product product = productRepository.findById(new ObjectId(cartItem.getProductId()))
                     .orElseThrow(() -> new RuntimeException("Product not found: " + cartItem.getProductId()));
 
             int quantityToReduce = cartItem.getQuantity();
-            int currentVariantStock = 0;
-            int currentVariantMinStock = product.getMinStockLevel();
+
+            String finalImage = product.getImageUrl();
+            if (finalImage == null && product.getImages() != null && !product.getImages().isEmpty()) {
+                finalImage = product.getImages().get(0);
+            }
+
+            int currentStock = 0;
             boolean isVariant = cartItem.getSize() != null && !cartItem.getSize().isEmpty();
 
+            // 🟢 ROBUST STOCK LOGIC (Fixes "Variant Not Found" Crash)
             if (isVariant) {
-                ProductVariant variant = product.getVariantBySize(cartItem.getSize())
-                        .orElseThrow(() -> new RuntimeException("Variant not found: " + cartItem.getSize()));
+                // Try to find the variant
+                Optional<ProductVariant> variantOpt = product.getVariantBySize(cartItem.getSize());
 
-                if (variant.getStock() < quantityToReduce) {
-                    throw new RuntimeException("Not enough stock for variant: " + variant.getSize());
+                if (variantOpt.isPresent()) {
+                    ProductVariant variant = variantOpt.get();
+                    if (variant.getStock() < quantityToReduce) {
+                        throw new RuntimeException("Not enough stock for variant: " + variant.getSize());
+                    }
+                    variant.setStock(variant.getStock() - quantityToReduce);
+                    product.recalculateTotalStock();
+                    currentStock = variant.getStock();
+                    if (variant.getImageUrl() != null && !variant.getImageUrl().isEmpty()) {
+                        finalImage = variant.getImageUrl();
+                    }
+                } else {
+                    // ⚠️ Fallback: If variant missing in DB, deduct from main stock to prevent crash
+                    System.err.println("Warning: Variant '" + cartItem.getSize() + "' not found for product '" + product.getName() + "'. Deducting from main stock.");
+                    if (product.getStock() < quantityToReduce) {
+                        throw new RuntimeException("Not enough stock for product: " + product.getName());
+                    }
+                    product.setStock(product.getStock() - quantityToReduce);
+                    currentStock = product.getStock();
                 }
-
-                variant.setStock(variant.getStock() - quantityToReduce);
-                product.recalculateTotalStock();
-                currentVariantStock = variant.getStock();
-                currentVariantMinStock = variant.getMinStock();
-
             } else {
                 if (product.getStock() < quantityToReduce) {
                     throw new RuntimeException("Not enough stock for product: " + product.getName());
                 }
                 product.setStock(product.getStock() - quantityToReduce);
-                currentVariantStock = product.getStock();
+                currentStock = product.getStock();
             }
 
             productRepository.save(product);
 
-            String logProductId = product.getId() + (isVariant ? " (" + cartItem.getSize() + ")" : "");
-
+            // Log Inventory Movement
             InventoryLog log = new InventoryLog(
                     product.getId(),
                     "SALE" + (isVariant ? " - " + cartItem.getSize() : ""),
                     -quantityToReduce,
-                    currentVariantStock
+                    currentStock
             );
             inventoryLogRepository.save(log);
 
-            if (currentVariantStock <= currentVariantMinStock) {
-                createLowStockNotification(product, isVariant ? cartItem.getSize() : null);
-            }
+            // 🟢 IMAGE SNAPSHOT LOGIC
+            String productImage = (product.getImages() != null && !product.getImages().isEmpty())
+                    ? product.getImages().get(0)
+                    : null;
 
             OrderItem orderItem = new OrderItem(
                     cartItem.getProductId(),
                     product.getName() + (isVariant ? " (" + cartItem.getSize() + ")" : ""),
                     cartItem.getQuantity(),
-                    cartItem.getPrice()
+                    cartItem.getPrice(),
+                    finalImage
             );
             orderItems.add(orderItem);
         }
 
         Order newOrder = new Order();
-
         newOrder.setUserId(userId);
+        newOrder.setUserEmail(userEmail); // <--- Saves Email!
         newOrder.setItems(orderItems);
-        newOrder.setTotalAmount(cart.getTotalPrice());
+        newOrder.setTotalAmount(totalAmount);
+        newOrder.setDiscountAmount(discountAmount);
+        newOrder.setPromoCodeUsed(promoCode);
         newOrder.setShippingAddress(shippingAddress);
         newOrder.setStatus("CONFIRMED");
         newOrder.setPaymentStatus("PAID");
         newOrder.setOrderNumber("ORD-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase());
-
-        newOrder.setTotalAmount(totalAmount);
-        newOrder.setDiscountAmount(discountAmount);
-        newOrder.setPromoCodeUsed(promoCode);
         newOrder.setEstimatedDelivery(LocalDate.now().plusDays(5));
+        newOrder.setCreatedAt(LocalDateTime.now()); // <--- Uses LocalDateTime!
 
         Order savedOrder = orderRepository.save(newOrder);
 
-        cartService.clearCart(userId);
+        if (selectedItems == null || selectedItems.isEmpty()) {
+            cartService.clearCart(userId);
+        } else {
+            cartService.removeItemsFromCart(userId, selectedItems);
+        }
 
         return savedOrder;
     }
@@ -155,12 +204,7 @@ public class OrderService {
 
         for (User admin : admins) {
             String itemName = product.getName() + (variantSize != null ? " (" + variantSize + ")" : "");
-
-            int currentStock = (variantSize != null)
-                    ? product.getVariantBySize(variantSize).map(ProductVariant::getStock).orElse(0)
-                    : product.getStock();
-
-            String message = "⚠️ Low Stock Alert: " + itemName + " is down to " + currentStock + " units.";
+            String message = "⚠️ Low Stock Alert: " + itemName + " is running low.";
 
             notificationService.createNotification(
                     admin.getId().toString(),
@@ -174,7 +218,9 @@ public class OrderService {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new RuntimeException("Order not found"));
 
-        List<String> validStatuses = List.of("CONFIRMED", "SHIPPED", "DELIVERED", "CANCELLED");
+        // 🟢 FIX: Added "PENDING" to valid statuses
+        List<String> validStatuses = List.of("PENDING", "CONFIRMED", "SHIPPED", "DELIVERED", "CANCELLED");
+
         if (!validStatuses.contains(newStatus)) {
             throw new RuntimeException("Invalid status: " + newStatus);
         }
@@ -186,16 +232,14 @@ public class OrderService {
 
         if (!oldStatus.equals(newStatus)) {
             String message = "";
-
             if ("SHIPPED".equals(newStatus)) {
-                message = "Your order #" + order.getOrderNumber() + " has been shipped! It will arrive soon.";
+                message = "Your order #" + order.getOrderNumber() + " has been shipped!";
             } else if ("DELIVERED".equals(newStatus)) {
-                message = "Your order #" + order.getOrderNumber() + " has been delivered. Enjoy your scent!";
+                message = "Your order #" + order.getOrderNumber() + " has been delivered.";
             } else if ("CANCELLED".equals(newStatus)) {
-                message = "Your order #" + order.getOrderNumber() + " has been cancelled. Contact support for more details.";
+                message = "Your order #" + order.getOrderNumber() + " has been cancelled.";
             }
 
-            // Only create notification if we have a message for this status change
             if (!message.isEmpty()) {
                 notificationService.createNotification(
                         order.getUserId(),
@@ -204,38 +248,89 @@ public class OrderService {
                 );
             }
         }
-
         return updatedOrder;
     }
 
     public List<BillingResponse> getBillingRecords() {
         List<Order> orders = orderRepository.findAll();
-
         return orders.stream().map(order -> {
             String email = "Unknown";
-
             if (order.getUserId() != null) {
                 email = userRepository.findById(new ObjectId(order.getUserId()))
                         .map(User::getEmail)
                         .orElse("Deleted User");
             }
-
             return BillingResponse.builder()
                     .orderId(order.getId().toString())
                     .orderNumber(order.getOrderNumber())
                     .customerEmail(email)
-                    .totalAmount(order.getTotal())
-                    .paymentStatus(order.getPaymentStatus()) // Ensure Order model has this (default "PAID")
-                    .date(order.getCreatedAt()) // Assuming Order uses LocalDateTime
+                    .totalAmount(BigDecimal.valueOf(order.getTotalAmount()))
+                    .paymentStatus(order.getPaymentStatus())
+                    .date(order.getCreatedAt())
                     .build();
         }).collect(Collectors.toList());
+    }
+
+    public DashboardStatsResponse getDashboardStats() {
+        List<Order> allOrders = orderRepository.findAll();
+
+        double totalSales = allOrders.stream()
+                .filter(o -> !"CANCELLED".equalsIgnoreCase(o.getStatus()))
+                .mapToDouble(Order::getTotalAmount)
+                .sum();
+
+        long totalOrders = allOrders.size();
+
+        long pendingCount = allOrders.stream()
+                .filter(o -> "PENDING".equalsIgnoreCase(o.getStatus()) || "CONFIRMED".equalsIgnoreCase(o.getStatus()))
+                .count();
+
+        long canceledCount = allOrders.stream()
+                .filter(o -> "CANCELLED".equalsIgnoreCase(o.getStatus()))
+                .count();
+
+        return new DashboardStatsResponse(totalSales, totalOrders, pendingCount, canceledCount);
     }
 
     public List<Order> getUserOrders(String userId) {
         return orderRepository.findByUserId(userId);
     }
 
+    public Page<Order> getAllOrders(int page, int size, String search) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+        Page<Order> orders;
+
+        if (search != null && !search.isEmpty()) {
+            orders = orderRepository.searchOrders(search, pageable);
+        } else {
+            orders = orderRepository.findAll(pageable);
+        }
+
+        orders.forEach(order -> {
+            if (order.getUserId() != null) {
+                try {
+                    userRepository.findById(new ObjectId(order.getUserId())).ifPresent(user -> {
+                        order.setUserEmail(user.getEmail());
+                    });
+                } catch (Exception e) {}
+            }
+        });
+        return orders;
+    }
+
     public List<Order> getAllOrders() {
         return orderRepository.findAll();
+    }
+
+    public List<Order> getOrdersByUser(String email) {
+        return orderRepository.findByUserEmail(email);
+    }
+
+    public Order saveOrder(Order order) {
+        return orderRepository.save(order);
+    }
+
+    public Order getOrderById(String id) {
+        return orderRepository.findById(id).orElseThrow(() -> new RuntimeException("Order not found"));
     }
 }

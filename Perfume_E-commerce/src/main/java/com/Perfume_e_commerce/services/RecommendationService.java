@@ -4,6 +4,7 @@ import com.Perfume_e_commerce.Repositories.ProductRepository;
 import com.Perfume_e_commerce.Repositories.UserRepository;
 import com.Perfume_e_commerce.models.product.Product;
 import com.Perfume_e_commerce.models.user.User;
+import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -24,12 +25,10 @@ public class RecommendationService {
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         List<String> views = user.getViewedProductIds();
-
         views.remove(productId);
-
         views.add(productId);
 
-        if (views.size() > 20) {
+        if (views.size() > 10) {
             views.remove(0);
         }
 
@@ -44,17 +43,22 @@ public class RecommendationService {
         List<String> history = user.getViewedProductIds();
 
         if (history.isEmpty()) {
-            return productRepository.findByIsActiveTrue().stream()
+            return productRepository.findByActiveTrue().stream()
                     .limit(5)
                     .collect(Collectors.toList());
         }
 
         String lastViewedId = history.get(history.size() - 1);
-        Product lastProduct = productRepository.findById(lastViewedId).orElse(null);
+        Product lastProduct = null;
+        try {
+            lastProduct = productRepository.findById(new ObjectId(lastViewedId)).orElse(null);
+        } catch (IllegalArgumentException e) {
+            // Invalid ID format
+        }
 
         if (lastProduct == null) return Collections.emptyList();
 
-        List<Product> recommendations = productRepository.findByCategoryAndIsActiveTrue(lastProduct.getCategory());
+        List<Product> recommendations = productRepository.findByCategoryAndActiveTrue(lastProduct.getCategory());
 
         return recommendations.stream()
                 .filter(p -> !p.getId().equals(lastViewedId))
