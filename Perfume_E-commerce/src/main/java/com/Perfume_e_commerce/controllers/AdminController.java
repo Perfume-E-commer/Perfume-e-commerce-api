@@ -146,7 +146,6 @@ public class AdminController {
         if (userOptional.isEmpty()) {
             return ResponseEntity.badRequest().body("User not found");
         }
-
         User admin = userOptional.get();
 
         admin.setFirstName(request.getFirstName());
@@ -158,28 +157,30 @@ public class AdminController {
         }
 
         List<Address> addresses = admin.getAddresses();
+
         if (addresses == null) {
             addresses = new ArrayList<>();
         }
 
-        Address address;
+        Address addressToUpdate;
+
         if (addresses.isEmpty()) {
-            address = new Address();
-            address.setType("HOME");
-            address.setFullName(request.getFirstName() + " " + request.getLastName());
-            addresses.add(address);
+            addressToUpdate = new Address();
+            addressToUpdate.setType("HOME");
+            addresses.add(addressToUpdate);
         } else {
-            address = addresses.get(0);
+            addressToUpdate = addresses.get(0);
         }
 
-        address.setStreet(request.getStreet());
-        address.setCity(request.getCity());
-        address.setZipCode(request.getZipCode());
+        addressToUpdate.setStreet(request.getStreet());
+        addressToUpdate.setCity(request.getCity());
+        addressToUpdate.setZipCode(request.getZipCode());
+        addressToUpdate.setFullName(request.getFirstName() + " " + request.getLastName());
 
         admin.setAddresses(addresses);
 
-        userRepository.save(admin);
+        User savedUser = userRepository.save(admin);
 
-        return ResponseEntity.ok("Profile updated successfully!");
+        return ResponseEntity.ok(savedUser);
     }
 }
