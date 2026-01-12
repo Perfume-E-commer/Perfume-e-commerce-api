@@ -40,9 +40,7 @@ public class DashboardService {
         long totalOrders30d = recentOrdersList.size();
 
         double revenue30d = recentOrdersList.stream()
-                .map(Order::getTotal)
-                .filter(Objects::nonNull)
-                .mapToDouble(BigDecimal::doubleValue)
+                .mapToDouble(Order::getTotalAmount)
                 .sum();
 
         long activeCustomers = allOrders.stream()
@@ -63,15 +61,16 @@ public class DashboardService {
             if (order.getCreatedAt() == null) continue;
 
             LocalDate date = order.getCreatedAt().toLocalDate();
-            AdminDashboardResponse.DailySalesData data = chartMap.getOrDefault(date,
-                    new AdminDashboardResponse.DailySalesData(date.format(formatter), 0.0, 0));
 
-            double amount = order.getTotal() != null ? order.getTotal().doubleValue() : 0.0;
-            data.setRevenue(data.getRevenue() + amount);
-            data.setOrderCount(data.getOrderCount() + 1);
-            chartMap.put(date, data);
+            if (chartMap.containsKey(date)) {
+                AdminDashboardResponse.DailySalesData data = chartMap.get(date);
+                double amount = order.getTotalAmount();
+                data.setRevenue(data.getRevenue() + amount);
+                data.setOrderCount(data.getOrderCount() + 1);
+            }
         }
         List<AdminDashboardResponse.DailySalesData> salesChart = new ArrayList<>(chartMap.values());
+        Collections.sort(salesChart, Comparator.comparing(d -> LocalDate.parse(d.getDate() + " " + LocalDate.now().getYear(), DateTimeFormatter.ofPattern("MMM dd yyyy"))));
 
         List<AdminDashboardResponse.RecentOrder> recentOrders = allOrders.stream()
                 .sorted(Comparator.comparing(Order::getCreatedAt, Comparator.nullsLast(Comparator.reverseOrder())))
@@ -92,12 +91,12 @@ public class DashboardService {
 
         List<Promotion> allPromos = promotionRepository.findAll();
         List<AdminDashboardResponse.ActivePromotion> activePromotions = allPromos.stream()
-                .filter(p -> p.isActive()) // Assuming 'active' boolean field
+                .filter(p -> p.isActive())
                 .limit(5)
                 .map(p -> new AdminDashboardResponse.ActivePromotion(
                         p.getId(),
                         p.getCode(),
-                        p.getDiscountPercentage(), // Assuming 'discountPercentage' field
+                        p.getDiscountPercentage(),
                         p.getValidUntil() != null ? p.getValidUntil().toString() : "N/A"
                 ))
                 .collect(Collectors.toList());
