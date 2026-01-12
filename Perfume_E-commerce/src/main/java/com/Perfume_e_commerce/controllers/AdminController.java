@@ -7,18 +7,26 @@ import com.Perfume_e_commerce.dto.response.DashboardStatsResponse;
 import com.Perfume_e_commerce.dto.response.UserProfileResponse;
 import com.Perfume_e_commerce.models.order.Order;
 import com.Perfume_e_commerce.models.product.Product;
+import com.Perfume_e_commerce.models.user.Address;
 import com.Perfume_e_commerce.models.user.User;
+import com.Perfume_e_commerce.services.FileStorageService;
 import com.Perfume_e_commerce.services.OrderService;
 import com.Perfume_e_commerce.services.ProductService;
+import com.Perfume_e_commerce.services.UserDetailsImpl;
+import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/admin")
@@ -32,6 +40,9 @@ public class AdminController {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private FileStorageService fileStorageService;
 
     @GetMapping("/products")
     @PreAuthorize("hasRole('ADMIN')")
@@ -82,7 +93,7 @@ public class AdminController {
         return ResponseEntity.ok(orderService.getBillingRecords());
     }
 
-    @GetMapping
+    @GetMapping("/profile")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<UserProfileResponse> getAdminProfile(@AuthenticationPrincipal UserDetails userDetails) {
         User user = userRepository.findByEmail(userDetails.getUsername())
@@ -98,7 +109,7 @@ public class AdminController {
         ));
     }
 
-    @PutMapping
+    @PutMapping("/profile")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<UserProfileResponse> updateAdminProfile(
             @AuthenticationPrincipal UserDetails userDetails,
@@ -120,5 +131,55 @@ public class AdminController {
                 user.getRole(),
                 request.getAvatarUrl()
         ));
+    }
+
+    @PutMapping(value = "/profile", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> updateAdminProfile(
+            @RequestPart("data") UpdateAdminProfileRequest request,
+            @RequestPart(value = "image", required = false) MultipartFile image,
+            @AuthenticationPrincipal UserDetailsImpl userDetails
+    ) {
+        ObjectId userId = new ObjectId(userDetails.getId());
+        Optional<User> userOptional = userRepository.findById(userId);
+
+        if (userOptional.isEmpty()) {
+            return ResponseEntity.badRequest().body("User not found");
+        }
+
+        User admin = userOptional.get();
+
+        admin.setFirstName(request.getFirstName());
+        admin.setLastName(request.getLastName());
+
+        if (image != null && !image.isEmpty()) {
+            String imageUrl = fileStorageService.storeFile(image);
+            admin.setImageUrl(imageUrl);
+        }
+
+        List<Address> addresses = admin.getAddresses();
+        if (addresses == null) {
+            addresses = new ArrayList<>();
+        }
+
+        Address address;
+        if (addresses.isEmpty()) {
+            address = new Address();
+            address.setType("HOME");
+            address.setFullName(request.getFirstName() + " " + request.getLastName());
+            addresses.add(address);
+        } else {
+            address = addresses.get(0);
+        }
+
+        address.setStreet(request.getStreet());
+        address.setCity(request.getCity());
+        address.setZipCode(request.getZipCode());
+
+        admin.setAddresses(addresses);
+
+        userRepository.save(admin);
+
+        return ResponseEntity.ok("Profile updated successfully!");
     }
 }

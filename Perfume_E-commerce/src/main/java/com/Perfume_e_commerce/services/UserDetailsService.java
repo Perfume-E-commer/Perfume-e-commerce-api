@@ -19,7 +19,6 @@ public class UserDetailsService implements org.springframework.security.core.use
     @Autowired
     private UserRepository userRepository;
 
-    // Business logic methods
     public boolean emailExists(String email) {
         return userRepository.existsByEmail(email);
     }
