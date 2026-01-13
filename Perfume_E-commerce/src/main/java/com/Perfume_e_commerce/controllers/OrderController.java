@@ -25,7 +25,6 @@ public class OrderController {
     @Autowired
     private UserRepository userRepository;
 
-    // Helper to extract User ID from JWT
     private String getCurrentUserId() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         UserDetails userDetails = (UserDetails) authentication.getPrincipal();
