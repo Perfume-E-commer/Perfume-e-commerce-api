@@ -5,6 +5,8 @@ import com.Perfume_e_commerce.dto.request.UpdateProfileRequest;
 import com.Perfume_e_commerce.models.user.Address;
 import com.Perfume_e_commerce.models.user.CreditCard;
 import com.Perfume_e_commerce.models.user.User;
+import com.Perfume_e_commerce.services.UserDetailsService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -23,6 +25,9 @@ public class UserController {
     @Autowired
     private UserRepository userRepository;
 
+    @Autowired
+    private UserDetailsService userDetailsService;
+
     @GetMapping("/profile")
     public ResponseEntity<User> getProfile() {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
@@ -35,33 +40,26 @@ public class UserController {
     public ResponseEntity<User> updateProfile(@RequestBody UpdateProfileRequest request) {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
 
-        return userRepository.findByEmail(email).map(user -> {
-            if (request.getFirstName() != null) user.setFirstName(request.getFirstName());
-            if (request.getLastName() != null) user.setLastName(request.getLastName());
-            if (request.getPhoneNumber() != null) user.setPhoneNumber(request.getPhoneNumber());
-            if (request.getDateOfBirth() != null) user.setDateOfBirth(request.getDateOfBirth());
-            if (request.getImageUrl() != null) user.setImageUrl(request.getImageUrl());
+        User userUpdate = new User();
+        userUpdate.setFirstName(request.getFirstName());
+        userUpdate.setLastName(request.getLastName());
+        userUpdate.setPhoneNumber(request.getPhoneNumber());
+        userUpdate.setDateOfBirth(request.getDateOfBirth());
+        userUpdate.setImageUrl(request.getImageUrl());
 
-            if (request.getStreet() != null || request.getZipCode() != null) {
-                Address address = new Address();
-                address.setStreet(request.getStreet());
-                address.setCity(request.getCity());
-                address.setZipCode(request.getZipCode());
-                address.setType("HOME");
+        return ResponseEntity.ok(userDetailsService.updateProfile(email, userUpdate));
+    }
 
-                List<Address> addressList = new ArrayList<>();
-                addressList.add(address);
-                user.setAddresses(addressList);
-            }
+    @PostMapping("/address")
+    public ResponseEntity<User> addAddress(@Valid @RequestBody Address address) {
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        return ResponseEntity.ok(userDetailsService.addAddress(email, address));
+    }
 
-            if (request.getCreditCards() != null) {
-                request.getCreditCards().forEach(CreditCard::maskCardNumber);
-                user.setCreditCards(request.getCreditCards());
-            }
-
-            userRepository.save(user);
-            return ResponseEntity.ok(user);
-        }).orElse(ResponseEntity.notFound().build());
+    @PostMapping("/card")
+    public ResponseEntity<User> addCard(@RequestBody CreditCard card) {
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        return ResponseEntity.ok(userDetailsService.addCreditCard(email, card));
     }
 
     @GetMapping
