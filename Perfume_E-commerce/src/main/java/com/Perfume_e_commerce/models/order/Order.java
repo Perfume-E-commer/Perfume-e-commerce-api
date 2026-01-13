@@ -8,6 +8,7 @@ import org.springframework.data.mongodb.core.mapping.Document;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 @Document(collection = "orders")
@@ -18,28 +19,24 @@ public class Order {
     private String id;
 
     private String userId;
-
-    private String orderNumber; // e.g., "ORD-123456"
-
+    private String orderNumber;
     private String userEmail;
-
-    private String promoCodeUsed; // e.g., "SUMMER10"
-
+    private String promoCodeUsed;
     private double discountAmount;
-
     private List<OrderItem> items = new ArrayList<>();
 
+    private Double subtotal;
+    private Double shippingCost;
+
     private double totalAmount;
-
     private BigDecimal total;
-
-    private String status; // "CONFIRMED", "SHIPPED", "DELIVERED", "CANCELLED"
-
+    private String status;
     private Address shippingAddress;
+    private String paymentStatus;
 
-    private String paymentStatus; // "PAID", "PENDING"
+    private Date shippedDate;
+    private Date deliveryDate;
 
     private java.time.LocalDate estimatedDelivery;
-
     private LocalDateTime createdAt = LocalDateTime.now();
 }
