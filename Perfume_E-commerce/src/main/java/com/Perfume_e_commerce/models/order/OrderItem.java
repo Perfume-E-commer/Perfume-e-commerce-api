@@ -17,6 +17,9 @@ public class OrderItem {
     private String brand;
     private String variant;
 
+    private String category;
+    private String occasion;
+
     public OrderItem(String productId, String productName, int quantity, double price, String imageUrl) {
         this.productId = productId;
         this.productName = productName;
@@ -30,5 +33,17 @@ public class OrderItem {
         this.productName = productName;
         this.quantity = quantity;
         this.price = price;
+    }
+
+    public OrderItem(String productId, String productName, int quantity, double price, String imageUrl, String brand, String variant, String category, String occasion) {
+        this.productId = productId;
+        this.productName = productName;
+        this.quantity = quantity;
+        this.price = price;
+        this.imageUrl = imageUrl;
+        this.brand = brand;
+        this.variant = variant;
+        this.category = category;
+        this.occasion = occasion;
     }
 }
