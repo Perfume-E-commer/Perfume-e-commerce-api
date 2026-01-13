@@ -34,6 +34,8 @@ public class Address {
     @Builder.Default
     private String type = "HOME";
 
+    private boolean isDefault;
+
     public String getFullAddress() {
         return String.format("#%s, St. %s, %s, %s, %s, %s",
                 houseNumber, street, village, community, district, city);
