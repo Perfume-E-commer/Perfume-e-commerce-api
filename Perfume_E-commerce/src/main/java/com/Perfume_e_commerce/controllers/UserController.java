@@ -1,6 +1,7 @@
 package com.Perfume_e_commerce.controllers;
 
 import com.Perfume_e_commerce.Repositories.UserRepository;
+import com.Perfume_e_commerce.dto.request.ChangePasswordRequest;
 import com.Perfume_e_commerce.dto.request.UpdateProfileRequest;
 import com.Perfume_e_commerce.models.user.Address;
 import com.Perfume_e_commerce.models.user.CreditCard;
@@ -15,6 +16,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -78,5 +80,31 @@ public class UserController {
         Pageable pageable = PageRequest.of(page, size);
         Page<User> users = userRepository.searchUsers(query, pageable);
         return ResponseEntity.ok(users);
+    }
+
+    @PostMapping("/change-password")
+    public ResponseEntity<?> changePassword(@RequestBody ChangePasswordRequest request) {
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        userDetailsService.changePassword(email, request);
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/avatar")
+    public ResponseEntity<String> uploadAvatar(@RequestParam("file") MultipartFile file) {
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        String imageUrl = userDetailsService.uploadAvatar(email, file);
+        return ResponseEntity.ok(imageUrl);
+    }
+
+    @DeleteMapping("/address/{addressId}")
+    public ResponseEntity<User> deleteAddress(@PathVariable String addressId) {
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        return ResponseEntity.ok(userDetailsService.deleteAddress(email, addressId));
+    }
+
+    @DeleteMapping("/card/{cardId}")
+    public ResponseEntity<User> deleteCard(@PathVariable String cardId) {
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        return ResponseEntity.ok(userDetailsService.deleteCreditCard(email, cardId));
     }
 }

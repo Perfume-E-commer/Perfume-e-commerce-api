@@ -6,11 +6,16 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.UUID;
+
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
 public class Address {
+    @Builder.Default
+    private String id = UUID.randomUUID().toString();
+
     @NotBlank
     private String houseNumber;
     @NotBlank

@@ -124,11 +124,6 @@ public class AdminController {
             @RequestPart(value = "image", required = false) MultipartFile image,
             @AuthenticationPrincipal UserDetailsImpl userDetails
     ) {
-        System.out.println("----- UPDATE PROFILE REQUEST RECEIVED -----");
-        System.out.println("First Name: " + request.getFirstName());
-        System.out.println("Street Sent: " + request.getStreet()); // <--- CHECK THIS
-        System.out.println("City Sent: " + request.getCity());
-        System.out.println("Image Present: " + (image != null));
 
         ObjectId userId = new ObjectId(userDetails.getId());
         Optional<User> userOptional = userRepository.findById(userId);
