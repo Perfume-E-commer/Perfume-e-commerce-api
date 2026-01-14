@@ -27,15 +27,36 @@ public class OrderResponse {
     private Date shippedDate;
     private Date estimatedArrivalDate;
 
+    private AddressDto shippingAddress;
+
     private List<OrderItemDto> items;
 
     @Data
     @AllArgsConstructor
     @NoArgsConstructor
     public static class OrderItemDto {
+        private String productId;
         private String name;
         private String brand;
         private String variant;
         private String imageUrl;
+        private String category;
+        private String occasion;
+        private Double price;
+        private Integer quantity;
+    }
+
+    @Data
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class AddressDto {
+        private String fullName;
+        private String houseNumber;
+        private String street;
+        private String village;
+        private String community;
+        private String district;
+        private String city;
+        private String phoneNumber;
     }
 }

@@ -34,6 +34,8 @@ public class Order {
     private Address shippingAddress;
     private String paymentStatus;
 
+    private String paymentMethod;
+
     private Date shippedDate;
     private Date deliveryDate;
 

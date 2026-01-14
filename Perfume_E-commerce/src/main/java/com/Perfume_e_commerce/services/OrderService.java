@@ -89,15 +89,17 @@ public class OrderService {
             }
         }
 
-        double totalAmount = itemsToProcess.stream()
+        double subtotal = itemsToProcess.stream()
                 .mapToDouble(item -> item.getPrice() * item.getQuantity())
                 .sum();
+
         double discountAmount = 0.0;
+        double finalTotal = subtotal;
 
         if (promoCode != null && !promoCode.isEmpty()) {
             Promotion promo = promotionService.validatePromotion(promoCode);
-            discountAmount = totalAmount * (promo.getDiscountPercentage() / 100.0);
-            totalAmount = totalAmount - discountAmount;
+            discountAmount = subtotal * (promo.getDiscountPercentage() / 100.0);
+            finalTotal = subtotal - discountAmount;
         }
 
         List<OrderItem> orderItems = new ArrayList<>();
@@ -115,9 +117,7 @@ public class OrderService {
             int currentStock = 0;
             boolean isVariant = cartItem.getSize() != null && !cartItem.getSize().isEmpty();
 
-            // 🟢 ROBUST STOCK LOGIC (Fixes "Variant Not Found" Crash)
             if (isVariant) {
-                // Try to find the variant
                 Optional<ProductVariant> variantOpt = product.getVariantBySize(cartItem.getSize());
 
                 if (variantOpt.isPresent()) {
@@ -132,7 +132,6 @@ public class OrderService {
                         finalImage = variant.getImageUrl();
                     }
                 } else {
-                    // ⚠️ Fallback: If variant missing in DB, deduct from main stock to prevent crash
                     System.err.println("Warning: Variant '" + cartItem.getSize() + "' not found for product '" + product.getName() + "'. Deducting from main stock.");
                     if (product.getStock() < quantityToReduce) {
                         throw new RuntimeException("Not enough stock for product: " + product.getName());
@@ -159,34 +158,38 @@ public class OrderService {
             );
             inventoryLogRepository.save(log);
 
-            // 🟢 IMAGE SNAPSHOT LOGIC
-            String productImage = (product.getImages() != null && !product.getImages().isEmpty())
-                    ? product.getImages().get(0)
-                    : null;
+            OrderItem orderItem = new OrderItem();
+            orderItem.setProductId(cartItem.getProductId());
+            orderItem.setProductName(product.getName() + (isVariant ? " (" + cartItem.getSize() + ")" : ""));
+            orderItem.setQuantity(cartItem.getQuantity());
+            orderItem.setPrice(cartItem.getPrice());
+            orderItem.setImageUrl(finalImage);
 
-            OrderItem orderItem = new OrderItem(
-                    cartItem.getProductId(),
-                    product.getName() + (isVariant ? " (" + cartItem.getSize() + ")" : ""),
-                    cartItem.getQuantity(),
-                    cartItem.getPrice(),
-                    finalImage
-            );
+            orderItem.setBrand(product.getBrand());
+            orderItem.setCategory(product.getCategory());
+            orderItem.setOccasion(product.getOccasion());
+            orderItem.setVariant(cartItem.getSize());
+
             orderItems.add(orderItem);
         }
 
         Order newOrder = new Order();
         newOrder.setUserId(userId);
-        newOrder.setUserEmail(userEmail); // <--- Saves Email!
+        newOrder.setUserEmail(userEmail);
         newOrder.setItems(orderItems);
-        newOrder.setTotalAmount(totalAmount);
+
+        newOrder.setSubtotal(subtotal);
+        newOrder.setShippingCost(0.0);
+        newOrder.setTotalAmount(finalTotal);
         newOrder.setDiscountAmount(discountAmount);
         newOrder.setPromoCodeUsed(promoCode);
+
         newOrder.setShippingAddress(shippingAddress);
         newOrder.setStatus("CONFIRMED");
         newOrder.setPaymentStatus("PAID");
         newOrder.setOrderNumber("ORD-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase());
         newOrder.setEstimatedDelivery(LocalDate.now().plusDays(5));
-        newOrder.setCreatedAt(LocalDateTime.now()); // <--- Uses LocalDateTime!
+        newOrder.setCreatedAt(LocalDateTime.now());
 
         Order savedOrder = orderRepository.save(newOrder);
 
@@ -218,7 +221,6 @@ public class OrderService {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new RuntimeException("Order not found"));
 
-        // 🟢 FIX: Added "PENDING" to valid statuses
         List<String> validStatuses = List.of("PENDING", "CONFIRMED", "SHIPPED", "DELIVERED", "CANCELLED");
 
         if (!validStatuses.contains(newStatus)) {

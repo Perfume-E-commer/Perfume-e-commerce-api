@@ -88,14 +88,32 @@ public class OrderController {
     }
 
     private OrderResponse mapToResponse(Order order) {
-        List<OrderResponse.OrderItemDto> itemDtos = order.getItems().stream()
-                .map(item -> new OrderResponse.OrderItemDto(
-                        item.getProductName(),
-                        item.getBrand(),
-                        item.getVariant(),
-                        item.getImageUrl()
-                ))
-                .collect(Collectors.toList());
+        List<OrderResponse.OrderItemDto> itemDtos = order.getItems().stream().map(item -> new OrderResponse.OrderItemDto(
+                item.getProductId(),
+                item.getProductName(),
+                item.getBrand(),
+                item.getVariant(),
+                item.getImageUrl(),
+                item.getCategory(),
+                item.getOccasion(),
+                item.getPrice(),
+                item.getQuantity()
+        )).collect(Collectors.toList());
+
+        // Map Address
+        OrderResponse.AddressDto addressDto = null;
+        if (order.getShippingAddress() != null) {
+            addressDto = new OrderResponse.AddressDto(
+                    order.getShippingAddress().getFullName(),
+                    order.getShippingAddress().getHouseNumber(),
+                    order.getShippingAddress().getStreet(),
+                    order.getShippingAddress().getVillage(),
+                    order.getShippingAddress().getCommunity(),
+                    order.getShippingAddress().getDistrict(),
+                    order.getShippingAddress().getCity(),
+                    order.getShippingAddress().getPhoneNumber()
+            );
+        }
 
         double total = order.getTotalAmount();
         double subtotal = (order.getSubtotal() != null) ? order.getSubtotal() : 0.0;
@@ -114,13 +132,15 @@ public class OrderController {
                 order.getItems().size(),
                 shipping,
                 total,
-                "Online Payment",
+                order.getPaymentMethod() != null ? order.getPaymentMethod() : "Online Payment",
                 createdDate,
                 shpDate,
                 delDate,
+                addressDto,
                 itemDtos
         );
     }
+
     private Date convertToDate(Object dateObj) {
         if (dateObj == null) return null;
 
