@@ -37,17 +37,17 @@ public class OrderController {
 
     private String getCurrentUserId() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        UserDetails userDetails = (UserDetails) authentication.getPrincipal();
-        return userRepository.findByEmail(userDetails.getUsername())
-                .map(user -> user.getId().toString())
-                .orElseThrow(() -> new RuntimeException("User not found"));
+        if (authentication != null && authentication.getPrincipal() instanceof UserDetailsImpl) {
+            return ((UserDetailsImpl) authentication.getPrincipal()).getId();
+        }
+        return null;
     }
 
     @PostMapping
     @PreAuthorize("hasRole('USER') or hasRole('CUSTOMER') or hasRole('ADMIN')")
-    public ResponseEntity<Order> placeOrder(@Valid @RequestBody PlaceOrderRequest request) {
+    public ResponseEntity<OrderResponse> placeOrder(@RequestBody @Valid PlaceOrderRequest request) {
         String userId = getCurrentUserId();
-        String userEmail = getCurrentUserEmail();
+        String userEmail = ((UserDetailsImpl) SecurityContextHolder.getContext().getAuthentication().getPrincipal()).getEmail();
 
         Order order = orderService.placeOrder(
                 userId,
@@ -56,19 +56,20 @@ public class OrderController {
                 request.getPromoCode(),
                 request.getSelectedItems()
         );
-        return ResponseEntity.ok(order);
+        return ResponseEntity.ok(mapToResponse(order));
     }
 
     @GetMapping("/my-orders")
-    @PreAuthorize("hasRole('USER') or hasRole('CUSTOMER') or hasRole('ADMIN')")
-    public ResponseEntity<List<OrderResponse>> getMyOrders(@AuthenticationPrincipal UserDetailsImpl userDetails) {
-        List<Order> orders = orderRepository.findByUserId(userDetails.getId());
+    @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
+    public ResponseEntity<List<OrderResponse>> getMyOrders() {
+        String userId = getCurrentUserId();
+        List<Order> orders = orderService.getUserOrders(userId);
 
-        List<OrderResponse> responseList = orders.stream()
+        List<OrderResponse> response = orders.stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
 
-        return ResponseEntity.ok(responseList);
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping
@@ -79,6 +80,13 @@ public class OrderController {
             @RequestParam(required = false) String search
     ) {
         return ResponseEntity.ok(orderService.getAllOrders(page, size, search));
+    }
+
+    @PostMapping("/{orderId}/cancel")
+    @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
+    public ResponseEntity<OrderResponse> cancelOrder(@PathVariable String orderId) {
+        Order order = orderService.updateOrderStatus(orderId, "CANCELLED");
+        return ResponseEntity.ok(mapToResponse(order));
     }
 
     private String getCurrentUserEmail() {
@@ -118,10 +126,12 @@ public class OrderController {
         double total = order.getTotalAmount();
         double subtotal = (order.getSubtotal() != null) ? order.getSubtotal() : 0.0;
         double shipping = (order.getShippingCost() != null) ? order.getShippingCost() : 0.0;
+        double discount = (order.getDiscountAmount() != 0.0) ? order.getDiscountAmount() : 0.0;
 
         Date createdDate = convertToDate(order.getCreatedAt());
         Date shpDate = convertToDate(order.getShippedDate());
         Date delDate = convertToDate(order.getDeliveryDate());
+        Date estDate = convertToDate(order.getEstimatedDelivery());
 
         return new OrderResponse(
                 order.getId(),
@@ -129,13 +139,16 @@ public class OrderController {
                 createdDate,
                 order.getStatus(),
                 subtotal,
+                discount,
+                order.getPromoCodeUsed(),
                 order.getItems().size(),
                 shipping,
                 total,
                 order.getPaymentMethod() != null ? order.getPaymentMethod() : "Online Payment",
+                order.getUserEmail(),
                 createdDate,
                 shpDate,
-                delDate,
+                estDate,
                 addressDto,
                 itemDtos
         );

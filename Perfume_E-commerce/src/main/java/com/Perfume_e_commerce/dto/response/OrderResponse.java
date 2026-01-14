@@ -18,10 +18,13 @@ public class OrderResponse {
     private String status;
 
     private Double subtotal;
+    private Double discountAmount;
+    private String promoCode;
     private Integer totalItems;
     private Double shippingCost;
     private Double total;
     private String paymentMethod;
+    private String customerEmail;
 
     private Date placedDate;
     private Date shippedDate;
