@@ -1,7 +1,9 @@
 package com.Perfume_e_commerce.services;
 
+import com.Perfume_e_commerce.Repositories.InventoryLogRepository;
 import com.Perfume_e_commerce.Repositories.ProductRepository;
 import com.Perfume_e_commerce.Repositories.UserRepository;
+import com.Perfume_e_commerce.models.inventory.InventoryLog;
 import com.Perfume_e_commerce.models.product.Product;
 import com.Perfume_e_commerce.models.product.Rating;
 import com.Perfume_e_commerce.models.user.User;
@@ -23,6 +25,9 @@ public class ProductService {
     @Autowired
     private ProductRepository productRepository;
 
+    @Autowired
+    private InventoryLogRepository inventoryLogRepository;
+
     public Page<Product> getAllProducts(int page, int size, String search) {
         Pageable pageable = PageRequest.of(page, size);
 
@@ -39,6 +44,10 @@ public class ProductService {
 
     public List<Product> getAllActiveProducts() {
         return productRepository.findByActiveTrue();
+    }
+
+    public List<InventoryLog> getProductHistory(String productId) {
+        return inventoryLogRepository.findByProductIdOrderByCreatedAtDesc(productId);
     }
 
     public Optional<Product> getProductById(String id) {

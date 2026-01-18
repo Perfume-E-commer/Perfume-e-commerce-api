@@ -5,6 +5,7 @@ import com.Perfume_e_commerce.dto.request.UpdateAdminProfileRequest;
 import com.Perfume_e_commerce.dto.response.AdminDashboardResponse;
 import com.Perfume_e_commerce.dto.response.BillingResponse;
 import com.Perfume_e_commerce.dto.response.UserProfileResponse;
+import com.Perfume_e_commerce.models.inventory.InventoryLog;
 import com.Perfume_e_commerce.models.order.Order;
 import com.Perfume_e_commerce.models.product.Product;
 import com.Perfume_e_commerce.models.user.Address;
@@ -76,6 +77,12 @@ public class AdminController {
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
+    }
+
+    @GetMapping("/products/{id}/history")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<List<InventoryLog>> getProductHistory(@PathVariable String id) {
+        return ResponseEntity.ok(productService.getProductHistory(id));
     }
 
     @PutMapping("/orders/{id}/status")
