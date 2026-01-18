@@ -41,6 +41,8 @@ public class Product {
 
     private String summary;
 
+    private String baseVolume;
+
     @NotNull(message = "Price is required")
     @DecimalMin(value = "0.01", message = "Price must be positive")
     private BigDecimal price;
