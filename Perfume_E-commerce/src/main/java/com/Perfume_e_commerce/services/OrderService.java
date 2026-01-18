@@ -27,14 +27,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
 
 @Service
 public class OrderService {
@@ -295,19 +292,44 @@ public class OrderService {
                 .count();
 
         List<RecentOrder> recentOrders = allOrders.stream()
-                .sorted((o1, o2) -> o2.getCreatedAt().compareTo(o1.getCreatedAt())) // Newest first
+                .sorted((o1, o2) -> o2.getCreatedAt().compareTo(o1.getCreatedAt()))
                 .limit(5)
-                .map(order -> new RecentOrder(
-                        order.getId(),
-                        order.getOrderNumber(), // This ensures ORD-XXXX is sent
-                        order.getShippingAddress() != null ? order.getShippingAddress().getFullName() : "Guest",
-                        order.getTotalAmount(),
-                        order.getStatus(),
-                        order.getCreatedAt().toString()
-                ))
+                .map(order -> {
+                    RecentOrder ro = new RecentOrder();
+                    ro.setId(order.getId());
+
+                    String displayOrderNum = (order.getOrderNumber() != null) ? order.getOrderNumber() : "ORD-PENDING";
+                    ro.setOrderNumber(displayOrderNum);
+
+                    ro.setCustomerName(order.getShippingAddress() != null ? order.getShippingAddress().getFullName() : "Guest");
+                    ro.setTotal(order.getTotalAmount());
+                    ro.setStatus(order.getStatus());
+                    ro.setCreatedAt(order.getCreatedAt().toString());
+                    return ro;
+                })
                 .collect(Collectors.toList());
 
+        Map<String, List<Order>> ordersByDate = last30DaysOrders.stream()
+                .collect(Collectors.groupingBy(
+                        o -> o.getCreatedAt().toLocalDate().toString()
+                ));
+
         List<DailySalesData> salesChart = new ArrayList<>();
+
+        LocalDate startDate = thirtyDaysAgo.plusDays(1);
+        for (int i = 0; i < 30; i++) {
+            LocalDate date = startDate.plusDays(i);
+            String dateStr = date.toString();
+
+            List<Order> dailyOrders = ordersByDate.getOrDefault(dateStr, Collections.emptyList());
+
+            double dailyRevenue = dailyOrders.stream()
+                    .filter(o -> !"CANCELLED".equalsIgnoreCase(o.getStatus()))
+                    .mapToDouble(Order::getTotalAmount)
+                    .sum();
+
+            salesChart.add(new DailySalesData(dateStr, dailyRevenue, dailyOrders.size()));
+        }
         List<LowStockItem> lowStockItems = new ArrayList<>();
         List<ActivePromotion> activePromotions = new ArrayList<>();
 
