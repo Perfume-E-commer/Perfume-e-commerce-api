@@ -149,6 +149,8 @@ public class OrderService {
 
             productRepository.save(product);
 
+            checkAndNotifyLowStock(product, isVariant ? cartItem.getSize() : null);
+
             // Log Inventory Movement
             InventoryLog log = new InventoryLog(
                     product.getId(),
@@ -334,5 +336,45 @@ public class OrderService {
 
     public Order getOrderById(String id) {
         return orderRepository.findById(id).orElseThrow(() -> new RuntimeException("Order not found"));
+    }
+
+    private void checkAndNotifyLowStock(Product product, String variantSize) {
+        int currentStock = 0;
+        int threshold = product.getMinStockLevel();
+
+        if (variantSize != null) {
+            Optional<ProductVariant> variantOpt = product.getVariantBySize(variantSize);
+            if (variantOpt.isPresent()) {
+                ProductVariant v = variantOpt.get();
+                currentStock = v.getStock();
+                if (v.getMinStock() != null) {
+                    threshold = v.getMinStock();
+                }
+            }
+        } else {
+            currentStock = product.getStock();
+        }
+
+        if (currentStock <= threshold) {
+            createLowStockNotification(product, variantSize, currentStock, threshold);
+        }
+    }
+
+    private void createLowStockNotification(Product product, String variantSize, int currentStock, int threshold) {
+        List<User> admins = userRepository.findByRole("ADMIN");
+        String itemName = product.getName() + (variantSize != null ? " (" + variantSize + ")" : "");
+
+        String message = String.format(
+                "⚠️ Low Stock Alert: %s is down to %d units (Threshold: %d). Please restock soon.",
+                itemName, currentStock, threshold
+        );
+
+        for (User admin : admins) {
+            notificationService.createNotification(
+                    admin.getId().toString(),
+                    message,
+                    "STOCK_ALERT"
+            );
+        }
     }
 }
