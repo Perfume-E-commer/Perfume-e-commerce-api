@@ -119,9 +119,6 @@ public class ProductController {
         product.setScentNotes(request.getScentNotes());
 
         if (request.getIsActive() != null) product.setActive(request.getIsActive());
-        if (request.getIsFeatured() != null) product.setFeatured(request.getIsFeatured());
-        if (request.getIsOnSale() != null) product.setOnSale(request.getIsOnSale());
-        if (request.getTaxIncluded() != null) product.setTaxIncluded(request.getTaxIncluded());
 
         return product;
     }
