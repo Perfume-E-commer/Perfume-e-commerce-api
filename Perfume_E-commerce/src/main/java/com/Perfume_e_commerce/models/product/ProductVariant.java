@@ -10,5 +10,5 @@ public class ProductVariant {
     private BigDecimal price;
     private String imageUrl;
     private int stock;
-    private int minStock = 5;
+    private Integer minStock = 5;
 }

@@ -15,6 +15,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @Document(collection = "products")
 @Data
@@ -41,7 +42,7 @@ public class Product {
 
     private String summary;
 
-    private String baseVolume;
+    private String baseSize;
 
     @NotNull(message = "Price is required")
     @DecimalMin(value = "0.01", message = "Price must be positive")
@@ -117,7 +118,7 @@ public class Product {
         }
     }
 
-    public java.util.Optional<ProductVariant> getVariantBySize(String size) {
+    public Optional<ProductVariant> getVariantBySize(String size) {
         if (this.variants == null) return java.util.Optional.empty();
         return this.variants.stream()
                 .filter(v -> v.getSize().equalsIgnoreCase(size))
