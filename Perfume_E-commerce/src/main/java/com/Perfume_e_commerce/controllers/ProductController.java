@@ -50,7 +50,7 @@ public class ProductController {
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> createProduct(@Valid @RequestBody CreateProductRequest request){
-        Product product = mapRequestToProduct(request); // Use helper method
+        Product product = mapRequestToProduct(request);
         Product saveProduct = productService.saveProduct(product);
 
         return ResponseEntity.ok(saveProduct);
@@ -103,27 +103,21 @@ public class ProductController {
         product.setName(request.getName());
         product.setBrand(request.getBrand());
         product.setDescription(request.getDescription());
-        product.setSummary(request.getSummary()); // New
-        product.setScent(request.getScent());     // New
-        product.setOccasion(request.getOccasion()); // New
-
+        product.setSummary(request.getSummary());
+        product.setScent(request.getScent());
+        product.setOccasion(request.getOccasion());
         product.setPrice(request.getPrice());
-        product.setDiscountedPrice(request.getDiscountedPrice()); // New
-
+        product.setDiscountedPrice(request.getDiscountedPrice());
         product.setStock(request.getStock());
-        product.setMinStockLevel(request.getMinStockLevel()); // New
-
+        product.setMinStockLevel(request.getMinStockLevel());
         product.setCategory(request.getCategory());
-
         product.setImageUrl(request.getImageUrl());
-        product.setImages(request.getImages()); // New
-
+        product.setImages(request.getImages());
         product.setVariants(request.getVariants());
         product.setProductStory(request.getProductStory());
         product.setFeatures(request.getFeatures());
         product.setScentNotes(request.getScentNotes());
 
-        // Handle Booleans (null check safety if needed, though Boolean defaults to null)
         if (request.getIsActive() != null) product.setActive(request.getIsActive());
         if (request.getIsFeatured() != null) product.setFeatured(request.getIsFeatured());
         if (request.getIsOnSale() != null) product.setOnSale(request.getIsOnSale());

@@ -27,15 +27,11 @@ public class ProductService {
         Pageable pageable = PageRequest.of(page, size);
 
         if (search != null && !search.isEmpty()) {
-            // ✅ FIX: Use general search (ignore active status)
             return productRepository.findByNameContainingIgnoreCase(search, pageable);
         } else {
-            // ✅ FIX: Use findAll to get EVERYTHING (ignore active status)
             return productRepository.findAll(pageable);
         }
     }
-
-    // --- PUBLIC STORE METHODS ---
 
     public List<Product> findByCategoryAndIsActiveTrue(String category){
         return productRepository.findByCategoryAndActiveTrue(category);
@@ -64,6 +60,7 @@ public class ProductService {
     }
 
     public Product saveProduct(Product product) {
+        product.recalculateTotalStock();
         return productRepository.save(product);
     }
 
@@ -96,6 +93,9 @@ public class ProductService {
                     existingProduct.setFeatured(updatedDetails.isFeatured());
                     existingProduct.setOnSale(updatedDetails.isOnSale());
                     existingProduct.setTaxIncluded(updatedDetails.isTaxIncluded());
+
+                    existingProduct.recalculateTotalStock();
+
                     return productRepository.save(existingProduct);
                 })
                 .orElseThrow(() -> new RuntimeException("Product not found with id " + id));
