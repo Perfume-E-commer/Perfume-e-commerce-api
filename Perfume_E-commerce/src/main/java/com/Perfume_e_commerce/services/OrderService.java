@@ -6,8 +6,7 @@ import com.Perfume_e_commerce.Repositories.OrderRepository;
 import com.Perfume_e_commerce.Repositories.ProductRepository;
 import com.Perfume_e_commerce.Repositories.UserRepository;
 import com.Perfume_e_commerce.dto.PlaceOrderRequest;
-import com.Perfume_e_commerce.dto.response.BillingResponse;
-import com.Perfume_e_commerce.dto.response.DashboardStatsResponse;
+import com.Perfume_e_commerce.dto.response.*;
 import com.Perfume_e_commerce.models.marketing.Promotion;
 import com.Perfume_e_commerce.models.order.Cart;
 import com.Perfume_e_commerce.models.order.CartItem;
@@ -275,25 +274,53 @@ public class OrderService {
         }).collect(Collectors.toList());
     }
 
-    public DashboardStatsResponse getDashboardStats() {
+    public AdminDashboardResponse getDashboardStats() {
         List<Order> allOrders = orderRepository.findAll();
 
-        double totalSales = allOrders.stream()
+        LocalDate thirtyDaysAgo = LocalDate.now().minusDays(30);
+        List<Order> last30DaysOrders = allOrders.stream()
+                .filter(o -> o.getCreatedAt().toLocalDate().isAfter(thirtyDaysAgo))
+                .collect(Collectors.toList());
+
+        long totalOrders30d = last30DaysOrders.size();
+
+        double revenue30d = last30DaysOrders.stream()
                 .filter(o -> !"CANCELLED".equalsIgnoreCase(o.getStatus()))
                 .mapToDouble(Order::getTotalAmount)
                 .sum();
 
-        long totalOrders = allOrders.size();
-
-        long pendingCount = allOrders.stream()
-                .filter(o -> "PENDING".equalsIgnoreCase(o.getStatus()) || "CONFIRMED".equalsIgnoreCase(o.getStatus()))
+        long activeCustomers = last30DaysOrders.stream()
+                .map(Order::getUserId)
+                .distinct()
                 .count();
 
-        long canceledCount = allOrders.stream()
-                .filter(o -> "CANCELLED".equalsIgnoreCase(o.getStatus()))
-                .count();
+        List<RecentOrder> recentOrders = allOrders.stream()
+                .sorted((o1, o2) -> o2.getCreatedAt().compareTo(o1.getCreatedAt())) // Newest first
+                .limit(5)
+                .map(order -> new RecentOrder(
+                        order.getId(),
+                        order.getOrderNumber(), // This ensures ORD-XXXX is sent
+                        order.getShippingAddress() != null ? order.getShippingAddress().getFullName() : "Guest",
+                        order.getTotalAmount(),
+                        order.getStatus(),
+                        order.getCreatedAt().toString()
+                ))
+                .collect(Collectors.toList());
 
-        return new DashboardStatsResponse(totalSales, totalOrders, pendingCount, canceledCount);
+        List<DailySalesData> salesChart = new ArrayList<>();
+        List<LowStockItem> lowStockItems = new ArrayList<>();
+        List<ActivePromotion> activePromotions = new ArrayList<>();
+
+        return new AdminDashboardResponse(
+                (int) totalOrders30d,
+                revenue30d,
+                0,
+                (int) activeCustomers,
+                salesChart,
+                recentOrders,
+                lowStockItems,
+                activePromotions
+        );
     }
 
     public List<Order> getUserOrders(String userId) {

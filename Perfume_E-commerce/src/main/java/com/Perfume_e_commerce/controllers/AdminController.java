@@ -2,6 +2,7 @@ package com.Perfume_e_commerce.controllers;
 
 import com.Perfume_e_commerce.Repositories.UserRepository;
 import com.Perfume_e_commerce.dto.request.UpdateAdminProfileRequest;
+import com.Perfume_e_commerce.dto.response.AdminDashboardResponse;
 import com.Perfume_e_commerce.dto.response.BillingResponse;
 import com.Perfume_e_commerce.dto.response.DashboardStatsResponse;
 import com.Perfume_e_commerce.dto.response.UserProfileResponse;
@@ -64,7 +65,7 @@ public class AdminController {
     }
 
     @GetMapping("/dashboard-stats")
-    public ResponseEntity<DashboardStatsResponse> getDashboardStats() {
+    public ResponseEntity<AdminDashboardResponse> getDashboardStats() {
         return ResponseEntity.ok(orderService.getDashboardStats());
     }
 
