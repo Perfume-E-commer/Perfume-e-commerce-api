@@ -41,15 +41,8 @@ public class UserController {
     @PutMapping("/profile")
     public ResponseEntity<User> updateProfile(@RequestBody UpdateProfileRequest request) {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
-
-        User userUpdate = new User();
-        userUpdate.setFirstName(request.getFirstName());
-        userUpdate.setLastName(request.getLastName());
-        userUpdate.setPhoneNumber(request.getPhoneNumber());
-        userUpdate.setDateOfBirth(request.getDateOfBirth());
-        userUpdate.setImageUrl(request.getImageUrl());
-
-        return ResponseEntity.ok(userDetailsService.updateProfile(email, userUpdate));
+        User updatedUser = userDetailsService.updateProfile(email, request);
+        return ResponseEntity.ok(updatedUser);
     }
 
     @PostMapping("/address")

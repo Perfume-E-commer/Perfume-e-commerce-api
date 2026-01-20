@@ -13,7 +13,6 @@ public class UpdateProfileRequest {
     private String phoneNumber;
     private LocalDate dateOfBirth;
 
-    // Address fields (to update the main address)
     private String street;
     private String city;
     private String zipCode;

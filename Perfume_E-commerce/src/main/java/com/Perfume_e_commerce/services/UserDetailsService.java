@@ -2,6 +2,7 @@ package com.Perfume_e_commerce.services;
 
 import com.Perfume_e_commerce.Repositories.UserRepository;
 import com.Perfume_e_commerce.dto.request.ChangePasswordRequest;
+import com.Perfume_e_commerce.dto.request.UpdateProfileRequest;
 import com.Perfume_e_commerce.models.user.Address;
 import com.Perfume_e_commerce.models.user.CreditCard;
 import com.Perfume_e_commerce.models.user.User;
@@ -71,15 +72,18 @@ public class UserDetailsService implements org.springframework.security.core.use
         return Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + role));
     }
 
-    public User updateProfile(String email, User updatedData) {
-        User user = findByEmailOrThrow(email);
+    public User updateProfile(String email, UpdateProfileRequest request) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
 
-        if (updatedData.getFirstName() != null) user.setFirstName(updatedData.getFirstName());
-        if (updatedData.getLastName() != null) user.setLastName(updatedData.getLastName());
-        if (updatedData.getPhoneNumber() != null) user.setPhoneNumber(updatedData.getPhoneNumber());
-        if (updatedData.getDateOfBirth() != null) user.setDateOfBirth(updatedData.getDateOfBirth());
-        // imageUrl, gender, etc. if you have them
+        if (request.getFirstName() != null) user.setFirstName(request.getFirstName());
+        if (request.getLastName() != null) user.setLastName(request.getLastName());
+        if (request.getPhoneNumber() != null) user.setPhoneNumber(request.getPhoneNumber());
+        if (request.getDateOfBirth() != null) user.setDateOfBirth(request.getDateOfBirth());
 
+        if (request.getImageUrl() != null && !request.getImageUrl().isEmpty()) {
+            user.setImageUrl(request.getImageUrl());
+        }
         return userRepository.save(user);
     }
 

@@ -8,6 +8,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.net.MalformedURLException;
 import java.nio.file.Path;
@@ -23,10 +24,15 @@ public class FileController {
 
     @PostMapping("/upload")
     public ResponseEntity<Map<String, String>> uploadFile(@RequestParam("file") MultipartFile file) {
-        String fileUrl = fileStorageService.storeFile(file);
+        String relativePath = fileStorageService.storeFile(file);
+
+        String fileUrl = ServletUriComponentsBuilder.fromCurrentContextPath() // Gets http://rithserver... or localhost
+                .path(relativePath)
+                .toUriString();
 
         Map<String, String> response = new HashMap<>();
-        response.put("url", "https://rithserver.tail683264.ts.net:8443" + fileUrl);
+        response.put("url", fileUrl);
+
         return ResponseEntity.ok(response);
     }
 
