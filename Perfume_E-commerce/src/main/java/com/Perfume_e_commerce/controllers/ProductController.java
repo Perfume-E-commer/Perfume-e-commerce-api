@@ -98,6 +98,19 @@ public class ProductController {
         }
     }
 
+    @DeleteMapping("/{id}/ratings")
+    @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
+    public ResponseEntity<?> deleteRating(@PathVariable String id) {
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+
+        try {
+            Product updatedProduct = productService.deleteRating(id, email);
+            return ResponseEntity.ok(updatedProduct);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
     private Product mapRequestToProduct(CreateProductRequest request) {
         Product product = new Product();
         product.setName(request.getName());

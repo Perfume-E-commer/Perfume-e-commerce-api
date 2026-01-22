@@ -160,6 +160,36 @@ public class ProductService {
         return productRepository.save(product);
     }
 
+    public Product deleteRating(String productId, String userEmail) {
+        Product product = findById(productId)
+                .orElseThrow(() -> new RuntimeException("Product not found"));
+
+        User user = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        String userId = user.getId().toString();
+
+        boolean removed = product.getRatings().removeIf(r -> r.getUserId().equals(userId));
+
+        if (!removed) {
+            throw new RuntimeException("Review not found for this user");
+        }
+
+        product.setTotalReviews(product.getRatings().size());
+
+        if (product.getRatings().isEmpty()) {
+            product.setAverageRating(0.0);
+        } else {
+            double average = product.getRatings().stream()
+                    .mapToInt(Rating::getStars)
+                    .average()
+                    .orElse(0.0);
+            product.setAverageRating(Math.round(average * 10.0) / 10.0);
+        }
+
+        return productRepository.save(product);
+    }
+
     public Page<Product> searchProducts(String keyword, String category, Double minPrice, Double maxPrice, int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
 
