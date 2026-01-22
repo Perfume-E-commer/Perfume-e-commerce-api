@@ -60,7 +60,7 @@ public class OrderService {
     private NotificationService notificationService;
 
     @Transactional
-    public Order placeOrder(String userId, String userEmail, Address shippingAddress, String promoCode, List<PlaceOrderRequest.OrderItemRequest> selectedItems) {
+    public Order placeOrder(String userId, String userEmail, Address shippingAddress, String promoCode, String paymentMethod, List<PlaceOrderRequest.OrderItemRequest> selectedItems) {
 
         Cart cart = cartService.getCartByUserId(userId);
         if (cart == null || cart.getItems().isEmpty()) {
@@ -186,7 +186,16 @@ public class OrderService {
 
         newOrder.setShippingAddress(shippingAddress);
         newOrder.setStatus("CONFIRMED");
-        newOrder.setPaymentStatus("PAID");
+
+        String method = (paymentMethod != null) ? paymentMethod : "Credit Card";
+        newOrder.setPaymentMethod(method);
+
+        if ("Cash".equalsIgnoreCase(method) || "Cash on Delivery".equalsIgnoreCase(method)) {
+            newOrder.setPaymentStatus("PENDING");
+        } else {
+            newOrder.setPaymentStatus("PAID");
+        }
+
         newOrder.setOrderNumber("ORD-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase());
         newOrder.setEstimatedDelivery(LocalDate.now().plusDays(5));
         newOrder.setCreatedAt(LocalDateTime.now());
@@ -387,6 +396,21 @@ public class OrderService {
 
     public Order getOrderById(String id) {
         return orderRepository.findById(id).orElseThrow(() -> new RuntimeException("Order not found"));
+    }
+
+    public Order updatePaymentStatus(String orderId, String newStatus) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new RuntimeException("Order not found"));
+
+        String method = order.getPaymentMethod();
+        boolean isOnlinePayment = method != null && !method.equalsIgnoreCase("Cash") && !method.equalsIgnoreCase("Cash on Delivery");
+
+        if (isOnlinePayment && "PENDING".equalsIgnoreCase(newStatus)) {
+            throw new RuntimeException("Action Denied: Cannot change status to PENDING for Credit Card/Online payments. They are already paid.");
+        }
+
+        order.setPaymentStatus(newStatus);
+        return orderRepository.save(order);
     }
 
     private void checkAndNotifyLowStock(Product product, String variantSize) {

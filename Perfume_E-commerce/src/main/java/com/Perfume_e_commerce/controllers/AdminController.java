@@ -208,4 +208,13 @@ public class AdminController {
 
         return ResponseEntity.ok(response);
     }
+
+    @PutMapping("/orders/{id}/payment-status")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Order> updatePaymentStatus(
+            @PathVariable String id,
+            @RequestParam String status) {
+
+        return ResponseEntity.ok(orderService.updatePaymentStatus(id, status));
+    }
 }

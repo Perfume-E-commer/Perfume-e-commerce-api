@@ -17,6 +17,8 @@ public class PlaceOrderRequest {
 
     private String promoCode;
 
+    private String paymentMethod;
+
     private List<OrderItemRequest> selectedItems;
 
     @Data

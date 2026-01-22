@@ -54,6 +54,7 @@ public class OrderController {
                 userEmail,
                 request.getShippingAddress(),
                 request.getPromoCode(),
+                request.getPaymentMethod(),
                 request.getSelectedItems()
         );
         return ResponseEntity.ok(mapToResponse(order));
