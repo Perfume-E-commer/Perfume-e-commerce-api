@@ -1,5 +1,6 @@
 package com.Perfume_e_commerce.models.marketing;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -26,6 +27,7 @@ public class Notification {
     private String message;
 
     @Builder.Default
+    @JsonProperty("isRead")
     private boolean isRead = false;
 
     @Builder.Default

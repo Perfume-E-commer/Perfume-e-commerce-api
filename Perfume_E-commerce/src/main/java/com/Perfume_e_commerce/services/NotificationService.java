@@ -27,8 +27,15 @@ public class NotificationService {
 
     public void markAllAsRead(String userId) {
         List<Notification> notifs = notificationRepository.findByUserIdOrderByCreatedAtDesc(new ObjectId(userId));
-        notifs.forEach(n -> n.setRead(true));
-        notificationRepository.saveAll(notifs);
+
+        List<Notification> unreadNotifs = notifs.stream()
+                .filter(n -> !n.isRead())
+                .peek(n -> n.setRead(true))
+                .toList();
+
+        if (!unreadNotifs.isEmpty()) {
+            notificationRepository.saveAll(unreadNotifs);
+        }
     }
 
 
@@ -41,5 +48,13 @@ public class NotificationService {
         notification.setRead(false);
         notification.setCreatedAt(java.time.LocalDateTime.now());
         notificationRepository.save(notification);
+    }
+
+    public void deleteNotification(String notificationId) {
+        if (notificationRepository.existsById(notificationId)) {
+            notificationRepository.deleteById(notificationId);
+        } else {
+            throw new RuntimeException("Notification not found");
+        }
     }
 }

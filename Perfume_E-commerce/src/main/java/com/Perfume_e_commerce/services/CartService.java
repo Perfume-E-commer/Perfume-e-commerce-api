@@ -22,12 +22,15 @@ public class CartService {
     private ProductRepository productRepository;
 
     public Cart getCartByUserId(String userId) {
-        return cartRepository.findByUserId(userId)
+        Cart cart = cartRepository.findByUserId(userId)
                 .orElseGet(() -> {
                     Cart newCart = new Cart();
                     newCart.setUserId(userId);
                     return cartRepository.save(newCart);
                 });
+
+        cart.calculateTotal();
+        return cartRepository.save(cart);
     }
 
     public Cart addToCart(String userId, String productId, int quantity, String size) {
