@@ -75,6 +75,7 @@ public class CartService {
         if (existingItem.isPresent()) {
             existingItem.get().setQuantity(existingItem.get().getQuantity() + quantity);
             existingItem.get().setImageUrl(targetImageUrl);
+            existingItem.get().setCategory(product.getCategory());
         } else {
             CartItem newItem = new CartItem(
                     productId,
@@ -84,6 +85,7 @@ public class CartService {
                     size,
                     targetImageUrl 
             );
+            newItem.setCategory(product.getCategory());
             cart.getItems().add(newItem);
         }
 
@@ -114,8 +116,10 @@ public class CartService {
         cart.getItems().removeIf(item -> {
             boolean idMatch = item.getProductId().equals(productId);
 
-            boolean sizeMatch = (size == null && item.getSize() == null) ||
-                    (size != null && size.equalsIgnoreCase(item.getSize()));
+            String itemSize = (item.getSize() == null) ? "" : item.getSize();
+            String paramSize = (size == null) ? "" : size;
+
+            boolean sizeMatch = itemSize.equalsIgnoreCase(paramSize);
 
             return idMatch && sizeMatch;
         });
