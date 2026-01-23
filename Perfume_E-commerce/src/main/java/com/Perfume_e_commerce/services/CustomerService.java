@@ -31,40 +31,54 @@ public class CustomerService {
 
         public Page<CustomerListItemResponse> searchCustomersWithAnalytics(String search, int page, int size) {
                 Pageable pageable = PageRequest.of(page, size);
-                Page<User> userPage = userRepository.findAll(pageable);
+                Page<User> userPage;
 
-                List<String> userIds = userPage.getContent().stream()
-                                .map(user -> user.getId().toString())
-                                .collect(Collectors.toList());
-
-                List<Order> ordersForPage = orderRepository.findAll().stream()
-                                .filter(o -> userIds.contains(o.getUserId()))
-                                .collect(Collectors.toList());
-
-                Map<String, List<Order>> ordersByUser = ordersForPage.stream()
-                                .collect(Collectors.groupingBy(Order::getUserId));
+                if (search != null && !search.trim().isEmpty()) {
+                        userPage = userRepository.searchUsers(search, pageable);
+                } else {
+                        userPage = userRepository.findAll(pageable);
+                }
 
                 List<CustomerListItemResponse> content = userPage.getContent().stream().map(user -> {
                         String uid = user.getId().toString();
-                        List<Order> userOrders = ordersByUser.getOrDefault(uid, Collections.emptyList());
+
+                        List<Order> userOrders = orderRepository.findByUserId(uid);
 
                         long orderCount = userOrders.size();
                         double totalSpent = userOrders.stream()
-                                        .mapToDouble(o -> o.getTotal() != null ? o.getTotal().doubleValue()
-                                                        : o.getTotalAmount())
-                                        .sum();
+                                .mapToDouble(o -> {
+                                        // Handle potential nulls safely
+                                        if (o.getTotal() != null) return o.getTotal().doubleValue();
+                                        return o.getTotalAmount();
+                                })
+                                .sum();
 
                         String lastActive = userOrders.stream()
-                                        .map(Order::getCreatedAt)
-                                        .filter(Objects::nonNull)
-                                        .max(LocalDateTime::compareTo)
-                                        .map(LocalDateTime::toString)
-                                        .orElse(null);
+                                .map(Order::getCreatedAt)
+                                .filter(Objects::nonNull)
+                                .max(LocalDateTime::compareTo)
+                                .map(LocalDateTime::toString)
+                                .orElse(null);
+
+                        String joinedAt = user.getCreatedAt() != null ? user.getCreatedAt().toString() : "";
+
+                        String phone = user.getPhoneNumber();
+                        if ((phone == null || phone.isEmpty()) && user.getAddresses() != null && !user.getAddresses().isEmpty()) {
+                                phone = user.getAddresses().get(0).getPhoneNumber();
+                        }
 
                         return new CustomerListItemResponse(
-                                        uid, user.getFirstName(), user.getLastName(), user.getEmail(),
-                                        true, user.getCreatedAt() != null ? user.getCreatedAt().toString() : "",
-                                        orderCount, totalSpent, lastActive);
+                                uid,
+                                user.getFirstName(),
+                                user.getLastName(),
+                                user.getEmail(),
+                                phone,
+                                true,
+                                joinedAt,
+                                orderCount,
+                                totalSpent,
+                                lastActive
+                        );
                 }).collect(Collectors.toList());
 
                 return new PageImpl<>(content, pageable, userPage.getTotalElements());
@@ -92,7 +106,12 @@ public class CustomerService {
                                 .filter(count -> count > 1)
                                 .count();
 
-                return new CustomerStatsResponse(totalCustomers, avgSpend, returningCustomers, newThisMonth);
+                return new CustomerStatsResponse(
+                        totalCustomers,
+                        avgSpend,
+                        returningCustomers,
+                        newThisMonth
+                );
         }
 
         public CustomerDetailResponse getCustomerDetails(String userId) {
