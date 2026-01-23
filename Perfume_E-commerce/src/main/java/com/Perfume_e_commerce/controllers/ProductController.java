@@ -124,7 +124,6 @@ public class ProductController {
         product.setStock(request.getStock());
         product.setMinStockLevel(request.getMinStockLevel());
         product.setCategory(request.getCategory());
-        product.setImageUrl(request.getImageUrl());
         product.setImages(request.getImages());
         product.setVariants(request.getVariants());
         product.setProductStory(request.getProductStory());

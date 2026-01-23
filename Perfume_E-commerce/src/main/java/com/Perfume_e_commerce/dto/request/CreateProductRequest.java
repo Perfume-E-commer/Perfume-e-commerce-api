@@ -50,7 +50,4 @@ public class CreateProductRequest {
     private List<String> images;
 
     private Boolean isActive;
-    private Boolean isFeatured;
-    private Boolean isOnSale;
-    private Boolean taxIncluded;
 }

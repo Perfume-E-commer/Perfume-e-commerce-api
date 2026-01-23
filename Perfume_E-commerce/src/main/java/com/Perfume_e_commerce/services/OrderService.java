@@ -107,7 +107,7 @@ public class OrderService {
 
             int quantityToReduce = cartItem.getQuantity();
 
-            String finalImage = product.getImageUrl();
+            String finalImage = null;
             if (finalImage == null && product.getImages() != null && !product.getImages().isEmpty()) {
                 finalImage = product.getImages().get(0);
             }

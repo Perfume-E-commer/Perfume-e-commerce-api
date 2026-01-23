@@ -92,16 +92,12 @@ public class ProductService {
                     existingProduct.setDiscountedPrice(updatedDetails.getDiscountedPrice());
                     existingProduct.setStock(updatedDetails.getStock());
                     existingProduct.setMinStockLevel(updatedDetails.getMinStockLevel());
-                    existingProduct.setImageUrl(updatedDetails.getImageUrl());
                     existingProduct.setImages(updatedDetails.getImages());
                     existingProduct.setVariants(updatedDetails.getVariants());
                     existingProduct.setProductStory(updatedDetails.getProductStory());
                     existingProduct.setFeatures(updatedDetails.getFeatures());
                     existingProduct.setScentNotes(updatedDetails.getScentNotes());
                     existingProduct.setActive(updatedDetails.isActive());
-                    existingProduct.setFeatured(updatedDetails.isFeatured());
-                    existingProduct.setOnSale(updatedDetails.isOnSale());
-                    existingProduct.setTaxIncluded(updatedDetails.isTaxIncluded());
 
                     existingProduct.recalculateTotalStock();
 
@@ -122,7 +118,6 @@ public class ProductService {
                             case "price": product.setPrice(new java.math.BigDecimal(String.valueOf(value))); break;
                             case "stock": product.setStock((Integer) value); break;
                             case "category": product.setCategory((String) value); break;
-                            case "imageUrl": product.setImageUrl((String) value); break;
                             case "isActive": product.setActive((Boolean) value); break;
                         }
                     });
