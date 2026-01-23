@@ -53,4 +53,23 @@ public class FileController {
             return ResponseEntity.badRequest().build();
         }
     }
+
+    @GetMapping("/uploads/avatars/{filename:.+}")
+    public ResponseEntity<Resource> serveAvatar(@PathVariable String filename) {
+        try {
+            // Resolve avatars subfolder
+            Path file = fileStorageService.loadFile("avatars/" + filename);
+            Resource resource = new UrlResource(file.toUri());
+
+            if (resource.exists() || resource.isReadable()) {
+                return ResponseEntity.ok()
+                        .contentType(MediaType.IMAGE_JPEG)
+                        .body(resource);
+            } else {
+                return ResponseEntity.notFound().build();
+            }
+        } catch (MalformedURLException e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
 }

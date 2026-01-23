@@ -24,9 +24,11 @@ public class AdminCustomerController {
     public ResponseEntity<Page<CustomerListItemResponse>> searchCustomers(
             @RequestParam(defaultValue = "") String query,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size
-    ) {
-        return ResponseEntity.ok(customerService.searchCustomersWithAnalytics(query, page, size));
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) String orderCount,
+            @RequestParam(required = false) String spendingTier) {
+        return ResponseEntity
+                .ok(customerService.searchCustomersWithAnalytics(query, page, size, orderCount, spendingTier));
     }
 
     @GetMapping("/stats")
