@@ -29,45 +29,104 @@ public class CustomerService {
         private final UserRepository userRepository;
         private final OrderRepository orderRepository;
 
-        public Page<CustomerListItemResponse> searchCustomersWithAnalytics(String search, int page, int size) {
-                Pageable pageable = PageRequest.of(page, size);
-                Page<User> userPage = userRepository.findAll(pageable);
+        public Page<CustomerListItemResponse> searchCustomersWithAnalytics(String search, int page, int size,
+                        String orderCountFilter, String spendingTier) {
+                // Load all users and orders then map, filter, and paginate server-side to
+                // support richer filters
+                List<User> allUsers = userRepository.findAll();
+                List<Order> allOrders = orderRepository.findAll();
 
-                List<String> userIds = userPage.getContent().stream()
-                                .map(user -> user.getId().toString())
-                                .collect(Collectors.toList());
-
-                List<Order> ordersForPage = orderRepository.findAll().stream()
-                                .filter(o -> userIds.contains(o.getUserId()))
-                                .collect(Collectors.toList());
-
-                Map<String, List<Order>> ordersByUser = ordersForPage.stream()
+                Map<String, List<Order>> ordersByUser = allOrders.stream()
+                                .filter(o -> o.getUserId() != null)
                                 .collect(Collectors.groupingBy(Order::getUserId));
 
-                List<CustomerListItemResponse> content = userPage.getContent().stream().map(user -> {
-                        String uid = user.getId().toString();
-                        List<Order> userOrders = ordersByUser.getOrDefault(uid, Collections.emptyList());
+                // Map users to DTOs with analytics
+                List<CustomerListItemResponse> mapped = allUsers.stream()
+                                .map(user -> {
+                                        String uid = user.getId().toString();
+                                        List<Order> userOrders = ordersByUser.getOrDefault(uid,
+                                                        Collections.emptyList());
 
-                        long orderCount = userOrders.size();
-                        double totalSpent = userOrders.stream()
-                                        .mapToDouble(o -> o.getTotal() != null ? o.getTotal().doubleValue()
-                                                        : o.getTotalAmount())
-                                        .sum();
+                                        long orderCount = userOrders.size();
+                                        double totalSpent = userOrders.stream()
+                                                        .mapToDouble(o -> o.getTotal() != null
+                                                                        ? o.getTotal().doubleValue()
+                                                                        : o.getTotalAmount())
+                                                        .sum();
 
-                        String lastActive = userOrders.stream()
-                                        .map(Order::getCreatedAt)
-                                        .filter(Objects::nonNull)
-                                        .max(LocalDateTime::compareTo)
-                                        .map(LocalDateTime::toString)
-                                        .orElse(null);
+                                        String lastActive = userOrders.stream()
+                                                        .map(Order::getCreatedAt)
+                                                        .filter(Objects::nonNull)
+                                                        .max(LocalDateTime::compareTo)
+                                                        .map(LocalDateTime::toString)
+                                                        .orElse(null);
 
-                        return new CustomerListItemResponse(
-                                        uid, user.getFirstName(), user.getLastName(), user.getEmail(),
-                                        true, user.getCreatedAt() != null ? user.getCreatedAt().toString() : "",
-                                        orderCount, totalSpent, lastActive);
-                }).collect(Collectors.toList());
+                                        return new CustomerListItemResponse(
+                                                        uid, user.getFirstName(), user.getLastName(), user.getEmail(),
+                                                        true,
+                                                        user.getCreatedAt() != null ? user.getCreatedAt().toString()
+                                                                        : "",
+                                                        orderCount, totalSpent, lastActive);
+                                })
+                                .collect(Collectors.toList());
 
-                return new PageImpl<>(content, pageable, userPage.getTotalElements());
+                // Apply text search if provided
+                String q = (search != null) ? search.trim().toLowerCase() : "";
+                java.util.stream.Stream<CustomerListItemResponse> stream = mapped.stream();
+                if (!q.isEmpty()) {
+                        stream = stream.filter(c -> (c.getFirstName() != null
+                                        && c.getFirstName().toLowerCase().contains(q)) ||
+                                        (c.getLastName() != null && c.getLastName().toLowerCase().contains(q)) ||
+                                        (c.getEmail() != null && c.getEmail().toLowerCase().contains(q)));
+                }
+
+                // Apply order count filter
+                if (orderCountFilter != null && !orderCountFilter.isEmpty()) {
+                        switch (orderCountFilter) {
+                                case "1":
+                                        stream = stream.filter(c -> c.getOrdersCount() == 1);
+                                        break;
+                                case "2+":
+                                        stream = stream.filter(c -> c.getOrdersCount() >= 2);
+                                        break;
+                                case "5+":
+                                        stream = stream.filter(c -> c.getOrdersCount() >= 5);
+                                        break;
+                                default:
+                                        // ignore unknown
+                        }
+                }
+
+                // Apply spending tier filter
+                if (spendingTier != null && !spendingTier.isEmpty()) {
+                        switch (spendingTier) {
+                                case "high":
+                                        stream = stream.filter(c -> c.getTotalSpent() > 200.0);
+                                        break;
+                                case "medium":
+                                        stream = stream.filter(
+                                                        c -> c.getTotalSpent() >= 50.0 && c.getTotalSpent() <= 200.0);
+                                        break;
+                                case "low":
+                                        stream = stream.filter(c -> c.getTotalSpent() < 50.0);
+                                        break;
+                                default:
+                                        // ignore unknown
+                        }
+                }
+
+                List<CustomerListItemResponse> filtered = stream.collect(Collectors.toList());
+
+                // Pagination
+                int fromIndex = page * size;
+                int toIndex = Math.min(fromIndex + size, filtered.size());
+                List<CustomerListItemResponse> pageContent = new ArrayList<>();
+                if (fromIndex < filtered.size()) {
+                        pageContent = filtered.subList(fromIndex, toIndex);
+                }
+
+                Pageable pageable = PageRequest.of(page, size);
+                return new PageImpl<>(pageContent, pageable, filtered.size());
         }
 
         public CustomerStatsResponse getCustomerStats() {

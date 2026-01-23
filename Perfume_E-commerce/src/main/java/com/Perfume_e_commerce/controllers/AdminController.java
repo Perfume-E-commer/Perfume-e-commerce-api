@@ -51,7 +51,7 @@ public class AdminController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(required = false) String search
-    ) {
+        ) {
         return ResponseEntity.ok(productService.getAllProductsForAdmin(page, size, search));
     }
 
@@ -60,7 +60,7 @@ public class AdminController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(required = false) String search
-    ) {
+        ) {
         return ResponseEntity.ok(orderService.getAllOrders(page, size, search));
     }
 
@@ -121,7 +121,7 @@ public class AdminController {
                 user.getEmail(),
                 user.getRole(),
                 request.getAvatarUrl()
-        ));
+            ));
     }
 
     @PutMapping(value = "/profile", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -130,7 +130,7 @@ public class AdminController {
             @RequestPart("data") UpdateAdminProfileRequest request,
             @RequestPart(value = "image", required = false) MultipartFile image,
             @AuthenticationPrincipal UserDetailsImpl userDetails
-    ) {
+        ) {
 
         ObjectId userId = new ObjectId(userDetails.getId());
         Optional<User> userOptional = userRepository.findById(userId);
@@ -140,8 +140,10 @@ public class AdminController {
         }
         User admin = userOptional.get();
 
-        admin.setFirstName(request.getFirstName());
-        admin.setLastName(request.getLastName());
+        if (request.getFirstName() != null)
+            admin.setFirstName(request.getFirstName());
+        if (request.getLastName() != null)
+            admin.setLastName(request.getLastName());
 
         if (image != null && !image.isEmpty()) {
             String imageUrl = fileStorageService.storeFile(image);
@@ -167,13 +169,32 @@ public class AdminController {
         addressToUpdate.setStreet(request.getStreet());
         addressToUpdate.setCity(request.getCity());
         addressToUpdate.setZipCode(request.getZipCode());
-        addressToUpdate.setFullName(request.getFirstName() + " " + request.getLastName());
+        addressToUpdate.setFullName((request.getFirstName() != null ? request.getFirstName() : admin.getFirstName())
+                + " " + (request.getLastName() != null ? request.getLastName() : admin.getLastName()));
 
         admin.setAddresses(addresses);
 
         User savedUser = userRepository.save(admin);
 
-        return ResponseEntity.ok(savedUser);
+        // Return a consistent UserProfileResponse
+        UserProfileResponse response = new UserProfileResponse(
+                savedUser.getId().toHexString(),
+                savedUser.getFirstName(),
+                savedUser.getLastName(),
+                savedUser.getEmail(),
+                savedUser.getRole(),
+                savedUser.getImageUrl(),
+                savedUser.getAddresses() != null && !savedUser.getAddresses().isEmpty()
+                        ? savedUser.getAddresses().get(0).getStreet()
+                        : "",
+                savedUser.getAddresses() != null && !savedUser.getAddresses().isEmpty()
+                        ? savedUser.getAddresses().get(0).getCity()
+                        : "",
+                savedUser.getAddresses() != null && !savedUser.getAddresses().isEmpty()
+                        ? savedUser.getAddresses().get(0).getZipCode()
+                        : "");
+
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/profile")
@@ -203,8 +224,7 @@ public class AdminController {
                 user.getImageUrl(),
                 street,
                 city,
-                zipCode
-        );
+                zipCode);
 
         return ResponseEntity.ok(response);
     }

@@ -14,6 +14,8 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
+import com.Perfume_e_commerce.services.FileStorageService;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -34,6 +36,9 @@ public class UserDetailsService implements org.springframework.security.core.use
     @Autowired
     @Lazy
     private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private FileStorageService fileStorageService;
 
     public boolean emailExists(String email) {
         return userRepository.existsByEmail(email);
@@ -61,8 +66,7 @@ public class UserDetailsService implements org.springframework.security.core.use
     @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
         User user = userRepository.findByEmail(email).orElseThrow(
-                () -> new UsernameNotFoundException("User not found with email: " + email)
-        );
+                () -> new UsernameNotFoundException("User not found with email: " + email));
 
         return UserDetailsImpl.build(user);
     }
@@ -75,10 +79,14 @@ public class UserDetailsService implements org.springframework.security.core.use
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        if (request.getFirstName() != null) user.setFirstName(request.getFirstName());
-        if (request.getLastName() != null) user.setLastName(request.getLastName());
-        if (request.getPhoneNumber() != null) user.setPhoneNumber(request.getPhoneNumber());
-        if (request.getDateOfBirth() != null) user.setDateOfBirth(request.getDateOfBirth());
+        if (request.getFirstName() != null)
+            user.setFirstName(request.getFirstName());
+        if (request.getLastName() != null)
+            user.setLastName(request.getLastName());
+        if (request.getPhoneNumber() != null)
+            user.setPhoneNumber(request.getPhoneNumber());
+        if (request.getDateOfBirth() != null)
+            user.setDateOfBirth(request.getDateOfBirth());
 
         if (request.getImageUrl() != null && !request.getImageUrl().isEmpty()) {
             user.setImageUrl(request.getImageUrl());
@@ -103,7 +111,9 @@ public class UserDetailsService implements org.springframework.security.core.use
         User user = findByEmailOrThrow(email);
 
         if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPasswordHash())) {
-            throw new RuntimeException("Invalid current password");
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.BAD_REQUEST,
+                    "Invalid current password");
         }
 
         user.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
@@ -113,36 +123,33 @@ public class UserDetailsService implements org.springframework.security.core.use
     public String uploadAvatar(String email, MultipartFile file) {
         User user = findByEmailOrThrow(email);
 
-        try {
-            String filename = UUID.randomUUID() + "_" + file.getOriginalFilename();
+        // Use FileStorageService to store files under the unified uploads directory
+        String relativePath = fileStorageService.storeFile(file); // returns path like "/api/uploads/<filename>"
 
-            Path uploadPath = Paths.get("uploads/avatars");
-            if (!Files.exists(uploadPath)) {
-                Files.createDirectories(uploadPath);
-            }
+        // Build absolute URL based on current request context
+        String fileUrl = ServletUriComponentsBuilder.fromCurrentContextPath()
+                .path(relativePath)
+                .toUriString();
 
-            Files.copy(file.getInputStream(), uploadPath.resolve(filename), StandardCopyOption.REPLACE_EXISTING);
+        user.setImageUrl(fileUrl);
+        userRepository.save(user);
 
-            String fileUrl = "http://localhost:8080/api/uploads/avatars/" + filename;
-
-            user.setImageUrl(fileUrl);
-            userRepository.save(user);
-
-            return fileUrl;
-
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to upload image", e);
-        }
+        return fileUrl;
     }
 
     public User deleteAddress(String email, String addressId) {
         User user = findByEmailOrThrow(email);
 
-        user.getAddresses().removeIf(addr ->
-                addr.getId() != null && addr.getId().equals(addressId)
-        );
+        user.getAddresses().removeIf(addr -> addr.getId() != null && addr.getId().equals(addressId));
 
         return userRepository.save(user);
     }
 
+    public User deleteCreditCard(String email, String cardId) {
+        User user = findByEmailOrThrow(email);
+
+        user.getCreditCards().removeIf(card -> card.getId() != null && card.getId().equals(cardId));
+
+        return userRepository.save(user);
+    }
 }
