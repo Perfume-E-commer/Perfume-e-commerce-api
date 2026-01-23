@@ -1,6 +1,7 @@
 package com.Perfume_e_commerce.services;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
@@ -9,6 +10,9 @@ import org.springframework.stereotype.Service;
 public class EmailService {
     @Autowired
     private JavaMailSender mailSender;
+
+    @Value("${spring.mail.username}")
+    private String adminEmail;
 
     public void sendVerificationEmail(String to, String code) {
         SimpleMailMessage message = new SimpleMailMessage();
@@ -27,6 +31,19 @@ public class EmailService {
                 "Your password reset code is: " + code + "\n\n" +
                 "If you did not request this, please ignore this email.\n" +
                 "This code expires in 5 minutes.");
+
+        mailSender.send(message);
+    }
+
+    public void sendContactMessage(String name, String fromEmail, String subject, String content) {
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setTo(adminEmail);
+        message.setSubject("Contact Form: " + (subject != null && !subject.isEmpty() ? subject : "No Subject"));
+        message.setText("You received a new message from the contact form.\n\n" +
+                "Name: " + name + "\n" +
+                "Email: " + fromEmail + "\n\n" +
+                "Message:\n" + content);
+        message.setReplyTo(fromEmail);
 
         mailSender.send(message);
     }
