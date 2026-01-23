@@ -84,7 +84,7 @@ public class WishlistController {
     }
 
     @PostMapping("/remove")
-    public ResponseEntity<List<User.WishliatItem>> removeFromWishlist(@RequestBody WishlistRequest request) {
+    public ResponseEntity<List<User.WishlistItem>> removeFromWishlist(@RequestBody WishlistRequest request) {
         User user = getAuthenticatedUser();
 
         if (user.getWishlist() != null) {
