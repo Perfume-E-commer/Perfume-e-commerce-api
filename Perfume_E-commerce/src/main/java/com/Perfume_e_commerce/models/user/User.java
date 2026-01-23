@@ -67,6 +67,13 @@ public class User {
     @Builder.Default
     private List<WishlistItem> wishlist = new ArrayList<>();
 
+    @Builder.Default
+    private List<CreditCard> creditCards = new ArrayList<>();
+
+    public List<CreditCard> getCreditCards() {
+        return this.creditCards;
+    }
+
     @Data
     @NoArgsConstructor
     @AllArgsConstructor
@@ -74,5 +81,17 @@ public class User {
     public static class WishlistItem {
         private String productId;
         private String size;
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class CreditCard {
+        private String id;
+        private String cardHolder;
+        private String last4;
+        private Integer expMonth;
+        private Integer expYear;
     }
 }
