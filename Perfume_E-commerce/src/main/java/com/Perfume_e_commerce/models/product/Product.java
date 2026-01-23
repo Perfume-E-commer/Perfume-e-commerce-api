@@ -48,8 +48,6 @@ public class Product {
     @DecimalMin(value = "0.01", message = "Price must be positive")
     private BigDecimal price;
 
-    private BigDecimal discountedPrice;
-
     @Min(value = 0, message = "Stock cannot be negative")
     @Indexed
     @Builder.Default
@@ -63,16 +61,8 @@ public class Product {
     @Indexed
     private String category;
 
-    private String imageUrl;
-
     @Builder.Default
     private List<String> images = new ArrayList<>();
-
-    @Builder.Default
-    private boolean taxIncluded = false;
-
-    @Builder.Default
-    private boolean isOnSale = false;
 
     @Builder.Default
     private Double averageRating = 0.0;
@@ -101,10 +91,6 @@ public class Product {
     @Indexed
     @Builder.Default
     private boolean active = true;
-
-    @Indexed
-    @Builder.Default
-    private boolean isFeatured = false;
 
     @Builder.Default
     private LocalDateTime createdAt = LocalDateTime.now();

@@ -91,13 +91,13 @@ public class OrderService {
 
         double shippingCost = (subtotal > 0) ? 5.00 : 0.0;
         double discountAmount = 0.0;
-        double finalTotal = subtotal;
 
         if (promoCode != null && !promoCode.isEmpty()) {
             Promotion promo = promotionService.validatePromotion(promoCode);
             discountAmount = subtotal * (promo.getDiscountPercentage() / 100.0);
-            finalTotal = (subtotal - discountAmount) + shippingCost;
         }
+
+        double finalTotal = (subtotal - discountAmount) + shippingCost;
 
 
         List<OrderItem> orderItems = new ArrayList<>();
@@ -107,7 +107,7 @@ public class OrderService {
 
             int quantityToReduce = cartItem.getQuantity();
 
-            String finalImage = product.getImageUrl();
+            String finalImage = null;
             if (finalImage == null && product.getImages() != null && !product.getImages().isEmpty()) {
                 finalImage = product.getImages().get(0);
             }

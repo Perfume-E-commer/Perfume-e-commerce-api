@@ -4,7 +4,6 @@ import com.Perfume_e_commerce.Repositories.UserRepository;
 import com.Perfume_e_commerce.dto.request.ChangePasswordRequest;
 import com.Perfume_e_commerce.dto.request.UpdateProfileRequest;
 import com.Perfume_e_commerce.models.user.Address;
-import com.Perfume_e_commerce.models.user.CreditCard;
 import com.Perfume_e_commerce.models.user.User;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
@@ -105,15 +104,6 @@ public class UserDetailsService implements org.springframework.security.core.use
         }
 
         user.getAddresses().add(address);
-        return userRepository.save(user);
-    }
-
-    public User addCreditCard(String email, CreditCard card) {
-        User user = findByEmailOrThrow(email);
-
-        card.setId(UUID.randomUUID().toString()); // Generate ID
-        user.getCreditCards().add(card);
-
         return userRepository.save(user);
     }
 

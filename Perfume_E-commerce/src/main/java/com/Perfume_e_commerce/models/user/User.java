@@ -62,11 +62,17 @@ public class User {
     private List<Address> addresses = new ArrayList<>();
 
     @Builder.Default
-    private List<CreditCard> creditCards = new ArrayList<>();
-
-    @Builder.Default
     private List<String> viewedProductIds = new ArrayList<>();
 
     @Builder.Default
-    private List<String> wishlist = new ArrayList<>();
+    private List<WishlistItem> wishlist = new ArrayList<>();
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class WishlistItem {
+        private String productId;
+        private String size;
+    }
 }

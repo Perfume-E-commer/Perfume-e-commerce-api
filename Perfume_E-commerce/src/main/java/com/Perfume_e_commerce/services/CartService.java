@@ -39,7 +39,9 @@ public class CartService {
                 .orElseThrow(() -> new RuntimeException("Product not found"));
 
         double finalPrice = product.getPrice().doubleValue();
-        String finalImageUrl = product.getImageUrl();
+        String finalImageUrl = (product.getImages() != null && !product.getImages().isEmpty())
+                ? product.getImages().get(0)
+                : null;
 
         if (size != null && !size.isEmpty()) {
             boolean variantExists = false;

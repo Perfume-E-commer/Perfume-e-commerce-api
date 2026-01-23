@@ -34,9 +34,9 @@ public class PromotionController {
         return ResponseEntity.ok(promotionService.getAllPromotions(page, size, search));
     }
 
-    @PostMapping("/validate")
-    public ResponseEntity<?> validatePromotion(@RequestBody Map<String, String> request) {
-        String code = request.get("code");
+    @GetMapping("/validate")
+    @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
+    public ResponseEntity<?> validatePromotion(@RequestParam String code) {
         if (code == null || code.isEmpty()) {
             return ResponseEntity.badRequest().body("Promo code is required");
         }

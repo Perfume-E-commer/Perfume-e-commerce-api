@@ -120,11 +120,9 @@ public class ProductController {
         product.setScent(request.getScent());
         product.setOccasion(request.getOccasion());
         product.setPrice(request.getPrice());
-        product.setDiscountedPrice(request.getDiscountedPrice());
         product.setStock(request.getStock());
         product.setMinStockLevel(request.getMinStockLevel());
         product.setCategory(request.getCategory());
-        product.setImageUrl(request.getImageUrl());
         product.setImages(request.getImages());
         product.setVariants(request.getVariants());
         product.setProductStory(request.getProductStory());

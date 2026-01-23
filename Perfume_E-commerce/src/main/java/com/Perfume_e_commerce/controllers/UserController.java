@@ -4,7 +4,6 @@ import com.Perfume_e_commerce.Repositories.UserRepository;
 import com.Perfume_e_commerce.dto.request.ChangePasswordRequest;
 import com.Perfume_e_commerce.dto.request.UpdateProfileRequest;
 import com.Perfume_e_commerce.models.user.Address;
-import com.Perfume_e_commerce.models.user.CreditCard;
 import com.Perfume_e_commerce.models.user.User;
 import com.Perfume_e_commerce.services.UserDetailsService;
 import jakarta.validation.Valid;
@@ -18,7 +17,6 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.util.ArrayList;
 import java.util.List;
 
 @RestController
@@ -49,12 +47,6 @@ public class UserController {
     public ResponseEntity<User> addAddress(@Valid @RequestBody Address address) {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
         return ResponseEntity.ok(userDetailsService.addAddress(email, address));
-    }
-
-    @PostMapping("/card")
-    public ResponseEntity<User> addCard(@RequestBody CreditCard card) {
-        String email = SecurityContextHolder.getContext().getAuthentication().getName();
-        return ResponseEntity.ok(userDetailsService.addCreditCard(email, card));
     }
 
     @GetMapping
@@ -93,11 +85,5 @@ public class UserController {
     public ResponseEntity<User> deleteAddress(@PathVariable String addressId) {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
         return ResponseEntity.ok(userDetailsService.deleteAddress(email, addressId));
-    }
-
-    @DeleteMapping("/card/{cardId}")
-    public ResponseEntity<User> deleteCard(@PathVariable String cardId) {
-        String email = SecurityContextHolder.getContext().getAuthentication().getName();
-        return ResponseEntity.ok(userDetailsService.deleteCreditCard(email, cardId));
     }
 }
