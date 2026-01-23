@@ -2,6 +2,8 @@ package com.Perfume_e_commerce.controllers;
 
 import com.Perfume_e_commerce.Repositories.ProductRepository;
 import com.Perfume_e_commerce.Repositories.UserRepository;
+import com.Perfume_e_commerce.dto.request.WishlistRequest;
+import com.Perfume_e_commerce.dto.response.WishlistResponse;
 import com.Perfume_e_commerce.models.product.Product;
 import com.Perfume_e_commerce.models.user.User;
 import org.bson.types.ObjectId;
@@ -12,6 +14,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @RestController
@@ -31,47 +34,64 @@ public class WishlistController {
     }
 
     @GetMapping
-    public ResponseEntity<List<Product>> getWishlist() {
+    public ResponseEntity<List<WishlistResponse>> getWishlist() {
         User user = getAuthenticatedUser();
-        List<String> productIds = user.getWishlist();
+        List<User.WishlistItem> items = user.getWishlist();
 
-        if (productIds == null || productIds.isEmpty()) {
+        if (items == null || items.isEmpty()) {
             return ResponseEntity.ok(new ArrayList<>());
         }
 
-        List<ObjectId> objectIds = productIds.stream()
-                .map(ObjectId::new)
+        List<ObjectId> objectIds = items.stream()
+                .map(item -> new ObjectId(item.getProductId()))
                 .collect(Collectors.toList());
 
-        List<Product> wishlistProducts = (List<Product>) productRepository.findAllById(objectIds);
+        List<Product> products = productRepository.findAllById(objectIds);
 
-        return ResponseEntity.ok(wishlistProducts);
+        List<WishlistResponse> response = new ArrayList<>();
+        for (User.WishlistItem item : items) {
+            Optional<Product> productOpt = products.stream()
+                    .filter(p -> p.getId().equals(item.getProductId()))
+                    .findFirst();
+
+            if (productOpt.isPresent()) {
+                response.add(new WishlistResponse(productOpt.get(), item.getSize()));
+            }
+        }
+
+        return ResponseEntity.ok(response);
     }
 
-    @PostMapping("/{productId}")
-    public ResponseEntity<List<String>> addToWishlist(@PathVariable String productId) {
+    @PostMapping("/add")
+    public ResponseEntity<List<User.WishlistItem>> addToWishlist(@RequestBody WishlistRequest request) {
         User user = getAuthenticatedUser();
 
         if (user.getWishlist() == null) {
             user.setWishlist(new ArrayList<>());
         }
 
-        // Add only if not already present
-        if (!user.getWishlist().contains(productId)) {
-            user.getWishlist().add(productId);
+        boolean exists = user.getWishlist().stream().anyMatch(item ->
+                item.getProductId().equals(request.getProductId()) &&
+                        (item.getSize() == null ? request.getSize() == null : item.getSize().equals(request.getSize()))
+        );
+
+        if (!exists) {
+            user.getWishlist().add(new User.WishlistItem(request.getProductId(), request.getSize()));
             userRepository.save(user);
         }
 
         return ResponseEntity.ok(user.getWishlist());
     }
 
-    // 3. Remove from Wishlist
-    @DeleteMapping("/{productId}")
-    public ResponseEntity<List<String>> removeFromWishlist(@PathVariable String productId) {
+    @PostMapping("/remove")
+    public ResponseEntity<List<User.WishliatItem>> removeFromWishlist(@RequestBody WishlistRequest request) {
         User user = getAuthenticatedUser();
 
-        if (user.getWishlist() != null && user.getWishlist().contains(productId)) {
-            user.getWishlist().remove(productId);
+        if (user.getWishlist() != null) {
+            user.getWishlist().removeIf(item ->
+                    item.getProductId().equals(request.getProductId()) &&
+                            (item.getSize() == null ? request.getSize() == null : item.getSize().equals(request.getSize()))
+            );
             userRepository.save(user);
         }
 

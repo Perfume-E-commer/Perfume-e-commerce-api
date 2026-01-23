@@ -65,5 +65,14 @@ public class User {
     private List<String> viewedProductIds = new ArrayList<>();
 
     @Builder.Default
-    private List<String> wishlist = new ArrayList<>();
+    private List<WishlistItem> wishlist = new ArrayList<>();
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class WishlistItem {
+        private String productId;
+        private String size;
+    }
 }
