@@ -129,16 +129,18 @@ public class DashboardService {
                 if (userOpt.isPresent()) {
                     customerName = userOpt.get().getFirstName() + " " + userOpt.get().getLastName();
                 } else {
-                    customerName = "User #" + order.getUserId().substring(0, 5) + "..."; // Fallback format
+                    customerName = "User #" + order.getUserId().substring(0, 5) + "...";
                 }
             }
         } catch (Exception e) {
             customerName = "Unknown";
         }
 
+        String displayOrderNum = (order.getOrderNumber() != null) ? order.getOrderNumber() : "ORD-PENDING";
+
         return new RecentOrder(
                 order.getId(),
-                order.getId(), // Or order.getOrderNumber() if available
+                displayOrderNum,
                 customerName,
                 order.getTotalAmount(),
                 order.getStatus(),
