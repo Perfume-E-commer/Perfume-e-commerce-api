@@ -91,13 +91,13 @@ public class OrderService {
 
         double shippingCost = (subtotal > 0) ? 5.00 : 0.0;
         double discountAmount = 0.0;
-        double finalTotal = subtotal;
 
         if (promoCode != null && !promoCode.isEmpty()) {
             Promotion promo = promotionService.validatePromotion(promoCode);
             discountAmount = subtotal * (promo.getDiscountPercentage() / 100.0);
-            finalTotal = (subtotal - discountAmount) + shippingCost;
         }
+
+        double finalTotal = (subtotal - discountAmount) + shippingCost;
 
 
         List<OrderItem> orderItems = new ArrayList<>();
