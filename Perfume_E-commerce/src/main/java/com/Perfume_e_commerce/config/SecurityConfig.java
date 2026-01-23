@@ -61,6 +61,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/uploads/**").permitAll()
                         .requestMatchers("/api/dev/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/users").permitAll()
+                        .requestMatchers("/api/promotions/validate").authenticated()
                         .anyRequest().authenticated()
                 )
                 .authenticationProvider(authenticationProvider());
