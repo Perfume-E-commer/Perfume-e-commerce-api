@@ -89,7 +89,6 @@ public class ProductService {
                     existingProduct.setScent(updatedDetails.getScent());
                     existingProduct.setOccasion(updatedDetails.getOccasion());
                     existingProduct.setPrice(updatedDetails.getPrice());
-                    existingProduct.setDiscountedPrice(updatedDetails.getDiscountedPrice());
                     existingProduct.setStock(updatedDetails.getStock());
                     existingProduct.setMinStockLevel(updatedDetails.getMinStockLevel());
                     existingProduct.setImages(updatedDetails.getImages());

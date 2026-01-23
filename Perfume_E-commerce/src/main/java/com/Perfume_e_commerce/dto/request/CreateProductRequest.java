@@ -28,9 +28,6 @@ public class CreateProductRequest {
     @DecimalMin(value = "0.01", message = "Price must be positive")
     private BigDecimal price;
 
-    @DecimalMin(value = "0.00", message = "Discount price cannot be negative")
-    private BigDecimal discountedPrice;
-
     @Min(value = 0, message = "Stock cannot be negative")
     private int stock;
 

@@ -48,8 +48,6 @@ public class Product {
     @DecimalMin(value = "0.01", message = "Price must be positive")
     private BigDecimal price;
 
-    private BigDecimal discountedPrice;
-
     @Min(value = 0, message = "Stock cannot be negative")
     @Indexed
     @Builder.Default
