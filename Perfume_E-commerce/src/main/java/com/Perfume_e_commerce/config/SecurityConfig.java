@@ -56,6 +56,8 @@ public class SecurityConfig {
                         .requestMatchers("/error").permitAll()
                         .requestMatchers("/api/uploads/**").permitAll()
                         .requestMatchers("/api/dev/**").permitAll()
+                        .requestMatchers("/api/contact/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/banners/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/users").permitAll()
                         .requestMatchers("/api/promotions/validate").authenticated()
                         .anyRequest().authenticated()
