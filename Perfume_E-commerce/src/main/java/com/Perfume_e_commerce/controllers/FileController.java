@@ -22,6 +22,7 @@ public class FileController {
     @Autowired
     private FileStorageService fileStorageService;
 
+
     @PostMapping("/upload")
     public ResponseEntity<Map<String, String>> uploadFile(@RequestParam("file") MultipartFile file) {
         String relativePath = fileStorageService.storeFile(file);

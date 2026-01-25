@@ -16,15 +16,33 @@ import java.util.UUID;
 
 @Service
 public class FileStorageService {
-    private final Path rootLocation = Paths.get("uploads");
-    private final Path fileStorageLocation;
+    private static final String SERVER_UPLOAD_DIR = "/home/dararith/perfume-uploads";
+    private final Path fileStorageLocation ;
 
     public FileStorageService() {
-        this.fileStorageLocation = Paths.get("uploads").toAbsolutePath().normalize();
+        Path targetPath;
 
         try {
-            // Create the directory if it doesn't exist
+            Path serverPath = Paths.get(SERVER_UPLOAD_DIR);
+            if (!Files.exists(serverPath)) {
+                Files.createDirectories(serverPath);
+            }
+            if (Files.isWritable(serverPath)) {
+                targetPath = serverPath;
+            } else {
+                System.out.println("Warning: Server path exists but is not writable. Falling back to local 'uploads'.");
+                targetPath = Paths.get("uploads");
+            }
+        } catch (Exception e) {
+            System.out.println("Notice: Could not use server path (" + SERVER_UPLOAD_DIR + "). Falling back to local 'uploads'.");
+            targetPath = Paths.get("uploads");
+        }
+
+        this.fileStorageLocation = targetPath.toAbsolutePath().normalize();
+
+        try {
             Files.createDirectories(this.fileStorageLocation);
+            System.out.println("File Storage configured at: " + this.fileStorageLocation);
         } catch (IOException e) {
             throw new RuntimeException("Could not initialize storage location", e);
         }
