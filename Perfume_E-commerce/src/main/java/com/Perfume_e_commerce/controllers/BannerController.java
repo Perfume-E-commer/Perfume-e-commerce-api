@@ -35,7 +35,7 @@ public class BannerController {
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Banner> updateBanner(@PathVariable String id, @RequestBody Banner banner) {
-        banner.setId(id); // Ensure ID is preserved
+        banner.setId(id);
         return ResponseEntity.ok(bannerRepository.save(banner));
     }
 
